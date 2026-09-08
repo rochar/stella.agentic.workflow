@@ -26,16 +26,15 @@ missing=""
 while IFS= read -r src; do
   rel="${src#"${TEMPLATES_DIR}/"}"                       # e.g. adrs/README.md
   if [ ! -f "${PROJECT_DIR}/docs/${rel}" ]; then
-    dir="docs/${rel%README.md}"
-    missing="${missing} ${dir%/}"
+    missing="${missing} docs/${rel}"
   fi
-done < <(find "${TEMPLATES_DIR}" -type f -name 'README.md' | sort)
+done < <(find "${TEMPLATES_DIR}" -type f -name '*.md' | sort)
 
 if [ -n "${missing}" ]; then
   echo ""
-  echo "NOTE: this repository is missing the following documentation folders (or their README.md indexes):${missing}."
-  echo "The structure is not bootstrapped yet. Run /stella-agentic-workflow-docs:docs-init"
-  echo "(or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create it before writing any docs."
+  echo "NOTE: this repository is missing the following documentation files (folder indexes or templates):${missing}."
+  echo "The structure is not fully bootstrapped. Run /stella-agentic-workflow-docs:docs-init"
+  echo "(or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create the missing files before writing any docs."
 fi
 
 exit 0

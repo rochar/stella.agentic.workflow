@@ -49,9 +49,10 @@ each folder's `README.md` index line, not in filenames. The index-line format is
 ADRs and plans). Splitting ADRs and plans into fixed-name part files lets agents load only the
 part they need (e.g. `decision.md` without the growing `log.md`).
 
-The part-file layout above is fixed, but **templates for the contents of each document are
-intentionally not defined yet** — they will be added later. Until then, documents are plain
-markdown with a clear title and date.
+The contents of each document are defined by standalone `<part>.template.md` files that live in
+the folder they apply to (bootstrapped together with the tree): `problem`/`decision`/`log` for
+ADRs, `problem`/`plan` for plans, and one template each for memories and learnings. Every
+document starts as a copy of its template; template files are not records and are never indexed.
 
 ## Installation
 

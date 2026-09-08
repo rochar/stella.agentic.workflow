@@ -57,8 +57,17 @@ snippet and the manual `/plugin` alternative are in `README.md`.
   session context. Keep `context/docs-structure.md` compact — it is paid for in every session.
 - Each `docs/*/README.md` is the index of its folder; any change to a folder's contents updates
   its index in the same change.
-- Document templates for the four types are deliberately not defined yet. Do not add them
-  speculatively.
+- Navigation through the docs tree is lazy and one-directional: session context →
+  `docs/README.md` → folder index → record part files. Docs files never link upward to
+  `docs/README.md` or `CLAUDE.md` — that context is already loaded every session, and the
+  bootstrapped tree must not assume anything about the host repo's CLAUDE.md.
+- Document templates are standalone `<part>.template.md` files in the folder they apply to
+  (never inline in the README — the index is read often, templates only at creation time).
+  All four types have templates. Plans and ADRs have one per part file, and the main part
+  stays thin: `plan.md` is execution only, `decision.md` is decision + status + consequences
+  only; investigation, forces, and alternatives live in `problem.md`, ADR history in `log.md`.
+  Memories and learnings have one template each (`memory.template.md`,
+  `learning.template.md`) and lead with the payload (fact / lesson) before the detail.
 
 ## Testing changes
 
@@ -70,3 +79,5 @@ There is no build, linter, or test suite. To verify plugin changes by hand:
   plugins/stella-agentic-workflow-docs/hooks-handlers/session-start.sh` (with and without a
   bootstrapped `<dir>/docs`)
 - validate every JSON file parses (e.g. `jq empty <file>`)
+- `diff -r docs plugins/stella-agentic-workflow-docs/templates/docs` (must report no
+  differences — the repo's own `docs/` tree mirrors the templates byte-for-byte)

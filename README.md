@@ -92,4 +92,4 @@ docs/
 └── learnings/         # lessons learned: failures, gotchas, corrections
 ```
 
-Document templates for each type will be defined later; for now documents are plain markdown.
+Each folder ships standalone `*.template.md` files; every document starts as a copy of its template.

@@ -12,9 +12,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/init-docs.sh"
 ```
 
 The script creates `docs/` with `adrs/`, `plans/`, `memories/`, and `learnings/` subfolders,
-each containing a `README.md` index, plus a root `docs/README.md` that links to the four
-indexes. It only creates what is missing and never overwrites existing files, so it is safe to
-run in a repository that already has a `docs/` folder.
+each containing a `README.md` index and the document templates (`*.template.md`), plus a root
+`docs/README.md` that links to the four indexes. It only creates what is missing and never
+overwrites existing files, so it is safe to run in a repository that already has a `docs/`
+folder (re-running it also backfills templates missing from an older bootstrap).
 
 After running it:
 

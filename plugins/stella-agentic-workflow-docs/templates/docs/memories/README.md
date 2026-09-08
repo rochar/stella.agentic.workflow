@@ -12,6 +12,9 @@ most 4 words — e.g. `0003-staging-db-quirk.md`). Take the next number from the
 (first record: `0001`). If a memory ever needs splitting, promote it to a directory with the
 same `NNNN-slug` stem; references by number stay valid.
 
+**Template:** copy [`memory.template.md`](./memory.template.md) from this folder. Template
+files are not records — never list them in the index.
+
 **Index line:** `- NNNN-slug — YYYY-MM-DD — one-line summary`
 
 ## Index

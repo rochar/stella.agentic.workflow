@@ -11,6 +11,10 @@ most 4 words — e.g. `0005-hook-stdout-buffering.md`). Take the next number fro
 (first record: `0001`). If a learning ever needs splitting, promote it to a directory with the
 same `NNNN-slug` stem; references by number stay valid.
 
+**Template:** copy [`learning.template.md`](./learning.template.md) from this folder — lead
+with the lesson, keep the story under it. Template files are not records — never list them in
+the index.
+
 **Index line:** `- NNNN-slug — YYYY-MM-DD — one-line summary`
 
 ## Index
