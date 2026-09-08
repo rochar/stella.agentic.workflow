@@ -27,8 +27,9 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 
 3. **Bootstraps the structure** — the `/stella-agentic-workflow-docs:docs-init` skill runs
    [scripts/init-docs.sh](scripts/init-docs.sh), which idempotently copies the
-   [templates/docs/](templates/docs/) tree (the single source of truth for the folders and
-   README index files) into the repository, never overwriting existing files.
+   [templates/docs/](templates/docs/) tree (the single source of truth for the folders, their
+   README index files, and the `*.template.md` document templates) into the repository, never
+   overwriting existing files.
 
 ## Document types
 
@@ -45,9 +46,9 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 Records are identified by a zero-padded per-folder sequence number (starting at `0001`) plus a
 kebab-case slug of at most 4 words (noun-phrase for ADRs, verb-phrase for plans); dates live in
 each folder's `README.md` index line, not in filenames. The index-line format is defined in
-`context/docs-structure.md` and each folder's `README.md` (the status field applies only to
-ADRs and plans). Splitting ADRs and plans into fixed-name part files lets agents load only the
-part they need (e.g. `decision.md` without the growing `log.md`).
+each folder's `README.md` (the status field applies only to ADRs and plans). Splitting ADRs
+and plans into fixed-name part files lets agents load only the part they need (e.g.
+`decision.md` without the growing `log.md`).
 
 The contents of each document are defined by standalone `<part>.template.md` files that live in
 the folder they apply to (bootstrapped together with the tree): `problem`/`decision`/`log` for

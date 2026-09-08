@@ -8,6 +8,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES_DIR="${SCRIPT_DIR}/../templates/docs"
 
+# shellcheck source=lib/template-files.sh
+. "${SCRIPT_DIR}/lib/template-files.sh"
+
 TARGET_DIR="${1:-${CLAUDE_PROJECT_DIR:-$(pwd)}}"
 DOCS_DIR="${TARGET_DIR}/docs"
 
@@ -30,12 +33,11 @@ copy_if_missing() {
   created="${created}"$'\n'"  ${dest}"
 }
 
-while IFS= read -r src; do
-  rel="${src#"${TEMPLATES_DIR}/"}"
+while IFS= read -r rel; do
   dest="${DOCS_DIR}/${rel}"
   mkdir -p "$(dirname "${dest}")"
-  copy_if_missing "${src}" "${dest}"
-done < <(find "${TEMPLATES_DIR}" -type f -name '*.md' | sort)
+  copy_if_missing "${TEMPLATES_DIR}/${rel}" "${dest}"
+done < <(template_files "${TEMPLATES_DIR}")
 
 if [ -n "${created}" ]; then
   printf 'Created:%s\n' "${created}"

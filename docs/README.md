@@ -2,7 +2,8 @@
 
 Knowledge left behind by agents and humans working on this repository, organized by type.
 Each folder's `README.md` is the index of its contents — keep it up to date whenever a
-document is added, renamed, or removed.
+document is added, renamed, or removed. Docs files link downward — into their own folder or
+deeper — never up to this file or to CLAUDE.md.
 
 | Folder (link = index) | Contents |
 | --- | --- |

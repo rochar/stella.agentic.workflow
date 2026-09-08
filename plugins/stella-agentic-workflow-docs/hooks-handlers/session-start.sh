@@ -2,6 +2,7 @@
 # SessionStart hook for stella-agentic-workflow-docs.
 # Whatever this script prints to stdout is added to the session context,
 # so every session (local CLI, desktop, or cloud) learns the docs/ conventions.
+# The injected file is paid for in every session — keep it a thin pointer.
 set -uo pipefail
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
@@ -15,26 +16,40 @@ if ! cat "${PLUGIN_ROOT}/context/docs-structure.md"; then
 fi
 
 # The expected structure is defined by templates/docs/ (the same tree
-# scripts/init-docs.sh copies), so adding a folder there is picked up here too.
+# scripts/init-docs.sh copies), enumerated by the helper both scripts share,
+# so adding a file or folder there is picked up here too.
 TEMPLATES_DIR="${PLUGIN_ROOT}/templates/docs"
 if [ ! -d "${TEMPLATES_DIR}" ]; then
   echo "stella-agentic-workflow-docs: templates directory not found: ${TEMPLATES_DIR} — cannot check whether docs/ is bootstrapped." >&2
   exit 1
 fi
 
-missing=""
-while IFS= read -r src; do
-  rel="${src#"${TEMPLATES_DIR}/"}"                       # e.g. adrs/README.md
-  if [ ! -f "${PROJECT_DIR}/docs/${rel}" ]; then
-    missing="${missing} docs/${rel}"
-  fi
-done < <(find "${TEMPLATES_DIR}" -type f -name '*.md' | sort)
+# shellcheck source=../scripts/lib/template-files.sh
+if ! . "${PLUGIN_ROOT}/scripts/lib/template-files.sh"; then
+  echo "stella-agentic-workflow-docs: cannot load ${PLUGIN_ROOT}/scripts/lib/template-files.sh — skipped the docs/ bootstrap check." >&2
+  exit 0
+fi
 
-if [ -n "${missing}" ]; then
+missing=""
+missing_count=0
+total=0
+while IFS= read -r rel; do                               # e.g. adrs/README.md
+  total=$((total + 1))
+  if [ ! -f "${PROJECT_DIR}/docs/${rel}" ]; then
+    missing="${missing}"$'\n'"  docs/${rel}"
+    missing_count=$((missing_count + 1))
+  fi
+done < <(template_files "${TEMPLATES_DIR}")
+
+if [ "${total}" -eq 0 ]; then
+  echo "stella-agentic-workflow-docs: no framework files found under ${TEMPLATES_DIR} — cannot check whether docs/ is bootstrapped." >&2
+  exit 1
+fi
+
+if [ "${missing_count}" -gt 0 ]; then
   echo ""
-  echo "NOTE: this repository is missing the following documentation files (folder indexes or templates):${missing}."
-  echo "The structure is not fully bootstrapped. Run /stella-agentic-workflow-docs:docs-init"
-  echo "(or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create the missing files before writing any docs."
+  echo "NOTE: docs/ is not fully bootstrapped (${missing_count} of ${total} framework files missing):${missing}"
+  echo "Run /stella-agentic-workflow-docs:docs-init (or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create them before writing any docs."
 fi
 
 exit 0

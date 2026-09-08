@@ -21,11 +21,6 @@ and outcomes are one dated line each, appended to `log.md`.
 [`decision.template.md`](./decision.template.md) and [`log.template.md`](./log.template.md)
 from this folder. Template files are not records — never list them in the index.
 
-**Reading:** shallow-to-deep and lazy — index line first, then `decision.md`, then
-`problem.md` or `log.md` only when you need the why or the history. Parts sit side by side in
-the record folder; no links between them are needed, and docs files never link upward (to
-`docs/README.md` or CLAUDE.md).
-
 **Index line:** `- NNNN-slug — status — YYYY-MM-DD — one-line summary` — keep the status
 current here whenever it changes.
 
