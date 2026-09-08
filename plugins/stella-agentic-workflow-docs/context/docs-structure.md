@@ -32,8 +32,22 @@ When to write each type:
   correction, a gotcha that cost time, a post-mortem. Add one whenever something did not work as
   expected and the reason is worth knowing next time.
 
-File naming: ADRs are `NNNN-short-title.md` (zero-padded sequence); plans, memories, and
-learnings are `YYYY-MM-DD-short-title.md`.
+File naming and record layout:
+
+- A record is `NNNN-slug`: a zero-padded per-folder sequence (first record `0001`; take the
+  next number from the folder's index) plus a kebab-case slug of at most 4 words (noun-phrase
+  for ADRs, verb-phrase for plans). No dates in filenames — the date lives in the index line
+  and the document header.
+- ADRs and plans are **directories** of fixed-name part files, so agents load only the part
+  they need: `adrs/NNNN-slug/` has `problem.md`, `decision.md`, `log.md`; `plans/NNNN-slug/`
+  has `problem.md`, `plan.md` (carries the status). When checking prior decisions, read the
+  index status first, then `decision.md`.
+- Memories and learnings are single files `NNNN-slug.md` (see the folder README before
+  splitting one).
+- Index line, one per record: `- NNNN-slug — status — YYYY-MM-DD — one-line summary` (status
+  only for ADRs and plans; update it whenever a record's status changes). Answer "is there a
+  decision or plan about X?" from the index; open record files only when the index is not
+  enough.
 
 Rules for agents:
 

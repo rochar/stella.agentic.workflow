@@ -33,16 +33,25 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 ## Document types
 
 - **adrs/** — any record of architectural or design decisions; anything important for new and
-  existing features. Written at decision time. Files: `NNNN-short-title.md`.
+  existing features. Written at decision time. Layout: directory `NNNN-slug/` with `problem.md`,
+  `decision.md`, `log.md`.
 - **plans/** — all plans produced by agents, skills, or workflows, stored before execution and
-  updated as work progresses. Files: `YYYY-MM-DD-short-title.md`.
+  updated as work progresses. Layout: directory `NNNN-slug/` with `problem.md`, `plan.md`.
 - **memories/** — durable facts not derivable from code or git history, added whenever a session
-  learns something a future session would otherwise rediscover. Files: `YYYY-MM-DD-short-title.md`.
+  learns something a future session would otherwise rediscover. Files: `NNNN-slug.md`.
 - **learnings/** — lessons learned (failed approaches, corrections, gotchas, post-mortems),
-  added whenever something didn't work as expected. Files: `YYYY-MM-DD-short-title.md`.
+  added whenever something didn't work as expected. Files: `NNNN-slug.md`.
 
-Document **templates are intentionally not defined yet** — they will be added later. Until then,
-documents are plain markdown with a clear title and date.
+Records are identified by a zero-padded per-folder sequence number (starting at `0001`) plus a
+kebab-case slug of at most 4 words (noun-phrase for ADRs, verb-phrase for plans); dates live in
+each folder's `README.md` index line, not in filenames. The index-line format is defined in
+`context/docs-structure.md` and each folder's `README.md` (the status field applies only to
+ADRs and plans). Splitting ADRs and plans into fixed-name part files lets agents load only the
+part they need (e.g. `decision.md` without the growing `log.md`).
+
+The part-file layout above is fixed, but **templates for the contents of each document are
+intentionally not defined yet** — they will be added later. Until then, documents are plain
+markdown with a clear title and date.
 
 ## Installation
 

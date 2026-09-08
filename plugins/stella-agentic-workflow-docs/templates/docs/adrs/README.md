@@ -5,7 +5,15 @@ trade-offs accepted, and approaches rejected (with reasons). Anything important 
 existing features belongs here.
 
 **When to add one:** whenever an architectural or design decision is made — at decision time,
-not retroactively. Name files `NNNN-short-title.md` (zero-padded sequence, e.g. `0001-use-postgres.md`).
+not retroactively.
+
+**Naming:** each ADR is a directory `NNNN-slug/` (zero-padded per-folder sequence; kebab-case
+noun-phrase slug, at most 4 words — e.g. `0012-use-postgres/`) containing `problem.md` (context
+and forces), `decision.md` (the decision itself), and `log.md` (append-only: status changes,
+revisits, outcomes). Take the next number from the index below (first record: `0001`).
+
+**Index line:** `- NNNN-slug — status — YYYY-MM-DD — one-line summary` — keep the status
+current here whenever it changes.
 
 ## Index
 
