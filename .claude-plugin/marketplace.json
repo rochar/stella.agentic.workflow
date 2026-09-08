@@ -1,0 +1,21 @@
+{
+  "name": "stella-agentic",
+  "description": "Marketplace for the stella.agentic.workflow framework plugins — shared conventions for agentic workflows across repositories.",
+  "owner": {
+    "name": "Ricardo Rocha",
+    "email": "ricardo.rocha@atriis.com"
+  },
+  "plugins": [
+    {
+      "name": "stella-agentic-workflow-docs",
+      "displayName": "stella.agentic.workflow.docs",
+      "description": "Standard docs/ structure (adrs, plans, memories, learnings) so agents leave durable, indexed knowledge behind in every repository.",
+      "source": "./plugins/stella-agentic-workflow-docs",
+      "category": "workflow",
+      "author": {
+        "name": "Ricardo Rocha"
+      },
+      "homepage": "https://github.com/rochar/stella.agentic.workflow"
+    }
+  ]
+}

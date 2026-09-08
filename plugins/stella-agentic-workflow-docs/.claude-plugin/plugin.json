@@ -1,0 +1,13 @@
+{
+  "name": "stella-agentic-workflow-docs",
+  "displayName": "stella.agentic.workflow.docs",
+  "description": "Defines and maintains the standard docs/ structure (adrs, plans, memories, learnings) that agents use to leave durable knowledge behind between sessions.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ricardo Rocha",
+    "email": "ricardo.rocha@atriis.com"
+  },
+  "homepage": "https://github.com/rochar/stella.agentic.workflow",
+  "repository": "https://github.com/rochar/stella.agentic.workflow",
+  "keywords": ["documentation", "adr", "memories", "learnings", "plans", "agentic-workflow"]
+}
