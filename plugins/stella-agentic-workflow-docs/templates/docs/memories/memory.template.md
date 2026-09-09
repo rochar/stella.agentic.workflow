@@ -1,6 +1,8 @@
 # NNNN — <title>
 
+- Type: environment | external-system | domain-rule | ownership
 - Date: YYYY-MM-DD
+- Verified: YYYY-MM-DD
 
 ## Fact
 <the durable fact — self-contained, not derivable from code or git history>

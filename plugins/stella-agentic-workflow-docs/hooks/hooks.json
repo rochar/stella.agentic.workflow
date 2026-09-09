@@ -1,5 +1,5 @@
 {
-  "description": "Injects the agentic docs/ structure conventions into every session at startup.",
+  "description": "Injects the agentic docs/ structure conventions into every session at startup, and nudges knowledge capture once per session.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,6 +7,16 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/stop.sh\""
           }
         ]
       }

@@ -25,7 +25,16 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
    document type, and that folder indexes must be kept up to date. If the structure is missing,
    the hook says so and points at the bootstrap skill.
 
-3. **Bootstraps the structure** — the `/stella-agentic-workflow-docs:docs-init` skill runs
+3. **Nudges capture once per session** — a `Stop` hook
+   ([hooks-handlers/stop.sh](hooks-handlers/stop.sh)) asks the agent to record anything durable
+   the session produced (decision, plan, memory, or learning) and update the folder index.
+   Claude Code fires `Stop` at the end of every assistant turn, so the hook keeps a per-session
+   marker (keyed on the payload's `session_id`) and nudges only the session's first stop. It
+   only fires when the `docs/` structure is fully bootstrapped, tells the agent explicitly to
+   finish without inventing records when nothing qualifies, and never blocks the same stop
+   twice.
+
+4. **Bootstraps the structure** — the `/stella-agentic-workflow-docs:docs-init` skill runs
    [scripts/init-docs.sh](scripts/init-docs.sh), which idempotently copies the
    [templates/docs/](templates/docs/) tree (the single source of truth for the folders, their
    README index files, and the `*.template.md` document templates) into the repository, never
@@ -39,14 +48,19 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 - **plans/** — all plans produced by agents, skills, or workflows, stored before execution and
   updated as work progresses. Layout: directory `NNNN-slug/` with `problem.md`, `plan.md`.
 - **memories/** — durable facts not derivable from code or git history, added whenever a session
-  learns something a future session would otherwise rediscover. Files: `NNNN-slug.md`.
+  learns something a future session would otherwise rediscover. Each memory declares a type and
+  carries a `Verified:` date updated whenever the fact is confirmed to still hold; the type
+  vocabulary and qualification rules live in `memories/README.md`. Files: `NNNN-slug.md`.
 - **learnings/** — lessons learned (failed approaches, corrections, gotchas, post-mortems),
-  added whenever something didn't work as expected. Files: `NNNN-slug.md`.
+  added when something didn't work as expected and the qualification rules in
+  `learnings/README.md` hold. Files: `NNNN-slug.md`.
 
 Records are identified by a zero-padded per-folder sequence number (starting at `0001`) plus a
 kebab-case slug of at most 4 words (noun-phrase for ADRs, verb-phrase for plans); dates live in
 each folder's `README.md` index line, not in filenames. The index-line format is defined in
-each folder's `README.md` (the status field applies only to ADRs and plans). Splitting ADRs
+each folder's `README.md` (ADR and plan index lines carry a status, memory index lines carry a
+type). Statuses have defined vocabularies and reading rules — only accepted ADRs bind, done or
+abandoned plans are history — documented in the folder `README.md`s. Splitting ADRs
 and plans into fixed-name part files lets agents load only the part they need (e.g.
 `decision.md` without the growing `log.md`).
 

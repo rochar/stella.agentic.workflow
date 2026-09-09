@@ -4,7 +4,14 @@ Lessons learned: approaches that failed and why, user corrections, gotchas that 
 post-mortems.
 
 **When to add one:** whenever something did not work as expected and the reason is worth
-knowing next time.
+knowing next time — but only if every rule below holds:
+
+- It **cost real time** or produced a wrong result, and could plausibly recur.
+- The lesson is **actionable** — what to do or avoid next time, not just "X happened".
+- It is **not prevented by the fix itself** — an ordinary bug fixed in code needs no learning;
+  record one only when the fix does not stop the mistake from being repeated elsewhere.
+- It **duplicates no existing learning** — extend the existing record instead of adding a
+  near-copy.
 
 **Naming:** single files `NNNN-slug.md` (zero-padded per-folder sequence; kebab-case slug, at
 most 4 words — e.g. `0005-hook-stdout-buffering.md`). Take the next number from the index below

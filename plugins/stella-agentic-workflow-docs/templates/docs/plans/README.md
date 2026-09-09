@@ -6,6 +6,11 @@ progresses.
 
 **When to add one:** whenever an agent or skill produces a plan worth keeping.
 
+**Status:** `proposed | in-progress | done | abandoned`, kept current in both `plan.md` and the
+index line below. A plan exists to fulfil one request: once `done` or `abandoned` it is history,
+never guidance — do not resume or follow it. Anything durable a plan produced or discovered
+outlives it as an ADR, memory, or learning, not as the plan itself.
+
 **Naming:** each plan is a directory `NNNN-slug/` (zero-padded per-folder sequence; kebab-case
 verb-phrase slug, at most 4 words — e.g. `0007-migrate-auth/`) containing `problem.md` (what is
 being solved and why) and `plan.md` (the plan; carries the status, updated as work progresses).

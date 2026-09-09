@@ -1,0 +1,15 @@
+# Local scratch / temporary files
+.tmp/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code local (per-user) settings
+.claude/settings.local.json

@@ -7,6 +7,12 @@ existing features belongs here.
 **When to add one:** whenever an architectural or design decision is made — at decision time,
 not retroactively.
 
+**Status:** `proposed | accepted | rejected | superseded by NNNN`, kept current in both
+`decision.md` and the index line below. Only **accepted** ADRs bind future work. `rejected` and
+`superseded` records are history: never follow them, and never delete them — when an ADR is
+superseded, the new ADR explains why in its `problem.md`, and the old record gets a dated
+`superseded by NNNN` line in its `log.md`.
+
 **Naming:** each ADR is a directory `NNNN-slug/` (zero-padded per-folder sequence; kebab-case
 noun-phrase slug, at most 4 words — e.g. `0012-use-postgres/`) containing `problem.md` (context
 and forces), `decision.md` (the decision itself), and `log.md` (append-only: status changes,

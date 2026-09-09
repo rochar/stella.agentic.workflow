@@ -102,6 +102,60 @@ case "${hook_out}" in
   *) echo "ok: hook is quiet when docs/ is bootstrapped" ;;
 esac
 
+# --- 4b. stop.sh hook smoke test ---------------------------------------------
+note "stop.sh hook"
+
+# Session markers land under TMPDIR — point it at our temp root so runs are
+# hermetic and the EXIT trap cleans the markers up.
+run_stop() { # $1 = stop_hook_active, $2 = project dir, $3 = session id
+  printf '{"session_id": "%s", "stop_hook_active": %s}' "$3" "$1" \
+    | TMPDIR="${TMP_ROOT}" CLAUDE_PROJECT_DIR="$2" \
+      bash "${PLUGIN_DIR}/hooks-handlers/stop.sh"
+}
+sid="checks-$$"
+
+stop_out="$(run_stop false "${target}" "${sid}")" \
+  || fail "stop hook exited non-zero on a session's first stop with docs/"
+if printf '%s' "${stop_out}" | jq -e '.decision == "block"' >/dev/null 2>&1; then
+  echo "ok: stop hook emits a valid JSON block decision on the session's first stop"
+else
+  fail "stop hook did not emit a valid block decision on the first stop: ${stop_out}"
+fi
+
+stop_out="$(run_stop false "${target}" "${sid}")" \
+  || fail "stop hook exited non-zero on a later stop of the same session"
+if [ -z "${stop_out}" ]; then
+  echo "ok: stop hook nudges the same session only once"
+else
+  fail "stop hook nudged the same session twice: ${stop_out}"
+fi
+
+stop_out="$(run_stop true "${target}" "${sid}-active")" \
+  || fail "stop hook exited non-zero when stop_hook_active is true"
+if [ -z "${stop_out}" ]; then
+  echo "ok: stop hook never blocks the same stop twice"
+else
+  fail "stop hook blocked again despite stop_hook_active: ${stop_out}"
+fi
+
+stop_out="$(run_stop false "${empty}" "${sid}-empty")" \
+  || fail "stop hook exited non-zero in a repo without docs/"
+if [ -z "${stop_out}" ]; then
+  echo "ok: stop hook is silent without a docs/ tree"
+else
+  fail "stop hook nudged a repo that has no docs/ tree: ${stop_out}"
+fi
+
+plain="${TMP_ROOT}/plain"
+mkdir -p "${plain}/docs"
+stop_out="$(run_stop false "${plain}" "${sid}-plain")" \
+  || fail "stop hook exited non-zero in a repo with a non-framework docs/"
+if [ -z "${stop_out}" ]; then
+  echo "ok: stop hook is silent when docs/ is not bootstrapped"
+else
+  fail "stop hook nudged a non-framework docs/ folder: ${stop_out}"
+fi
+
 # --- 5. This repo's docs/ carries the templates/docs scaffold ----------------
 # Per CLAUDE.md: every *.template.md matches byte-for-byte; folder README.md
 # prose matches, but docs/ indexes may ADD record index lines; the only extra
