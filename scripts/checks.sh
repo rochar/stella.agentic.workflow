@@ -109,7 +109,7 @@ note "stop.sh hook"
 # hermetic and the EXIT trap cleans the markers up.
 run_stop() { # $1 = stop_hook_active, $2 = project dir, $3 = session id
   printf '{"session_id": "%s", "stop_hook_active": %s}' "$3" "$1" \
-    | TMPDIR="${TMP_ROOT}" CLAUDE_PROJECT_DIR="$2" \
+    | TMPDIR="${TMP_ROOT}" CLAUDE_PROJECT_DIR="$2" CLAUDE_PLUGIN_ROOT="${PLUGIN_DIR}" \
       bash "${PLUGIN_DIR}/hooks-handlers/stop.sh"
 }
 sid="checks-$$"
@@ -154,6 +154,18 @@ if [ -z "${stop_out}" ]; then
   echo "ok: stop hook is silent when docs/ is not bootstrapped"
 else
   fail "stop hook nudged a non-framework docs/ folder: ${stop_out}"
+fi
+
+# Without CLAUDE_PLUGIN_ROOT the hook must self-locate (the manual-testing path
+# documented in CLAUDE.md); run_stop covers the env-provided production path.
+stop_out="$(printf '{"session_id": "%s", "stop_hook_active": false}' "${sid}-noenv" \
+  | TMPDIR="${TMP_ROOT}" CLAUDE_PROJECT_DIR="${target}" \
+    bash "${PLUGIN_DIR}/hooks-handlers/stop.sh")" \
+  || fail "stop hook exited non-zero without CLAUDE_PLUGIN_ROOT"
+if printf '%s' "${stop_out}" | jq -e '.decision == "block"' >/dev/null 2>&1; then
+  echo "ok: stop hook self-locates when CLAUDE_PLUGIN_ROOT is unset"
+else
+  fail "stop hook did not nudge via self-location fallback: ${stop_out}"
 fi
 
 # --- 5. This repo's docs/ carries the templates/docs scaffold ----------------

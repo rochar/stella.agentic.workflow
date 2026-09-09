@@ -40,6 +40,14 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
    README index files, and the `*.template.md` document templates) into the repository, never
    overwriting existing files.
 
+5. **Gardens the tree on demand** — the `/stella-agentic-workflow-docs:docs-gc` skill
+   ([skills/docs-gc/SKILL.md](skills/docs-gc/SKILL.md)) reviews the records: it fixes index
+   drift, re-verifies or retires stale memories, marks obsolete learnings, merges
+   near-duplicates, updates dead plan statuses, and tightens prose — always following the
+   folder READMEs' retirement rules (retired records keep their index lines; only memory
+   files are ever deleted; ADRs and plans are never removed), never editing the scaffold,
+   and never committing: the diff is left for human review.
+
 ## Document types
 
 - **adrs/** — any record of architectural or design decisions; anything important for new and

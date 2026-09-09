@@ -37,8 +37,10 @@ two:
 - **Team-shared** — the knowledge is committed to the repository and reviewed in pull requests
   like any other change, so every collaborator's sessions benefit from what one session learned.
 - **Consistent across repositories** — the convention is defined once in the plugin; every
-  repository that installs it gets the same structure, and updates to the convention reach all
-  of them without copy-pasting between `CLAUDE.md` files.
+  repository that installs it gets the same structure, and updates to the plugin-delivered
+  convention (hooks, injected context, skills) reach all of them without copy-pasting between
+  `CLAUDE.md` files. The bootstrapped `docs/` scaffold is committed to each repository and
+  never overwritten, so its README prose changes only when you update it there.
 - **Structured** — typed records (decisions, plans, memories, learnings) with templates and
   per-folder indexes, instead of freeform notes.
 
@@ -100,6 +102,20 @@ With the plugin installed, create the `docs/` tree once and commit the result:
 
 The bootstrap is idempotent and never overwrites existing files, so it is safe to run in a
 repository that already has a `docs/` folder — it only fills in what is missing.
+
+### Garden it over time
+
+Records accumulate and some go stale. Run the gardening skill occasionally to keep the tree
+trustworthy:
+
+```
+/stella-agentic-workflow-docs:docs-gc
+```
+
+It fixes index drift, re-verifies or retires stale memories, marks learnings whose lesson no
+longer applies as obsolete, merges near-duplicates, and updates dead plan statuses — without
+erasing history (retired records keep their index lines, so record numbers stay stable). It
+never commits; review the diff like any other change.
 
 ## How it works
 

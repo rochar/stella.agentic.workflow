@@ -23,8 +23,8 @@ Two consequences of that goal shape most decisions here:
 - `plugins/stella-agentic-workflow-docs/` — the docs-structure plugin: hooks (`hooks/hooks.json`
   with a SessionStart handler `hooks-handlers/session-start.sh` and a Stop handler
   `hooks-handlers/stop.sh`), injected context (`context/docs-structure.md`), bootstrap
-  (`scripts/init-docs.sh` copying `templates/docs/`), and the `docs-init` skill. Details in its
-  `README.md`.
+  (`scripts/init-docs.sh` copying `templates/docs/`), and the `docs-init` (bootstrap) and
+  `docs-gc` (gardening) skills. Details in its `README.md`.
 - `docs/` — this repo's own instance of the structure (adrs, plans, memories, learnings).
 
 Naming constraint: Claude Code requires kebab-case plugin and marketplace names (no dots), so

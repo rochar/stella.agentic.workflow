@@ -6,8 +6,8 @@ design decisions), `plans/` (plans produced by agents, skills, or workflows), `m
 corrections). Each folder's `README.md` is the index of its contents.
 
 1. Skim the indexes relevant to your task before starting; never silently contradict an
-   accepted ADR. Index lines carry status: records whose status marks them no longer current
-   are history, not guidance (each folder's `README.md` defines its statuses).
+   accepted ADR. A record whose index line marks it as no longer current (a status or a
+   retirement suffix — each folder's `README.md` defines its own) is history, not guidance.
 2. When your work produces a decision, plan, durable fact, or lesson, record it in the
    matching folder and update that folder's index in the same change.
 3. Before writing or editing any record, read that folder's `README.md` — it defines naming,

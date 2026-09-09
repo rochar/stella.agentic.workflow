@@ -23,6 +23,22 @@ if [[ "${input}" =~ ${re_active} ]]; then
   exit 0
 fi
 
+# Once per session, step 1: if this session was already nudged, let the stop
+# through before doing any filesystem work. The marker dir is per-user (uid
+# suffix, mode 700) because ${TMPDIR:-/tmp} can be shared between users on
+# Linux — a marker dir owned by another user would silently refuse writes and
+# turn "once per session" into "once per stop". Without a session_id (e.g.
+# manual invocation), or if the marker cannot be written below, fall back to
+# relying on stop_hook_active alone: at most one nudge per stop cycle instead
+# of one per session, and never a loop.
+marker=""
+re_sid='"session_id"[[:space:]]*:[[:space:]]*"([A-Za-z0-9._-]+)"'
+if [[ "${input}" =~ ${re_sid} ]]; then
+  marker_dir="${TMPDIR:-/tmp}/stella-agentic-workflow-docs-$(id -u)"
+  marker="${marker_dir}/nudged-${BASH_REMATCH[1]}"
+  [ -e "${marker}" ] && exit 0
+fi
+
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 # Fall back to self-location so the hook also works when run outside Claude
 # Code (e.g. manual testing) where CLAUDE_PLUGIN_ROOT is not exported.
@@ -37,20 +53,20 @@ TEMPLATES_DIR="${PLUGIN_ROOT}/templates/docs"
 [ -d "${TEMPLATES_DIR}" ] || exit 0
 # shellcheck source=../scripts/lib/template-files.sh
 . "${PLUGIN_ROOT}/scripts/lib/template-files.sh" 2>/dev/null || exit 0
+total=0
 while IFS= read -r rel; do
+  total=$((total + 1))
   [ -f "${PROJECT_DIR}/docs/${rel}" ] || exit 0
 done < <(template_files "${TEMPLATES_DIR}")
+# Zero enumerable framework files means a broken install: like
+# session-start.sh, treat "cannot check" as not bootstrapped rather than
+# nudging the agent toward README files that do not exist.
+[ "${total}" -gt 0 ] || exit 0
 
-# Once per session: record the nudge in a marker file before blocking, so every
-# later stop of this session passes through. Without a session_id (e.g. manual
-# invocation) fall back to relying on stop_hook_active alone; if the marker
-# cannot be written, degrade the same way rather than blocking the stop.
-re_sid='"session_id"[[:space:]]*:[[:space:]]*"([A-Za-z0-9._-]+)"'
-if [[ "${input}" =~ ${re_sid} ]]; then
-  marker_dir="${TMPDIR:-/tmp}/stella-agentic-workflow-docs"
-  marker="${marker_dir}/nudged-${BASH_REMATCH[1]}"
-  [ -e "${marker}" ] && exit 0
-  mkdir -p "${marker_dir}" 2>/dev/null && : >"${marker}" 2>/dev/null
+# Once per session, step 2: record the nudge in the marker before blocking, so
+# every later stop of this session passes through.
+if [ -n "${marker}" ]; then
+  { (umask 077 && mkdir -p "${marker_dir}") && : >"${marker}"; } 2>/dev/null
 fi
 
 cat <<'EOF'
