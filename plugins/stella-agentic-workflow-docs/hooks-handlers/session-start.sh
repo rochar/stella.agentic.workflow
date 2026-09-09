@@ -20,8 +20,11 @@ fi
 # so adding a file or folder there is picked up here too.
 TEMPLATES_DIR="${PLUGIN_ROOT}/templates/docs"
 if [ ! -d "${TEMPLATES_DIR}" ]; then
+  # The conventions were already printed above; a non-zero exit would make
+  # Claude Code discard that stdout, so degrade to a stderr warning and skip
+  # the (secondary) bootstrap check rather than losing the context injection.
   echo "stella-agentic-workflow-docs: templates directory not found: ${TEMPLATES_DIR} — cannot check whether docs/ is bootstrapped." >&2
-  exit 1
+  exit 0
 fi
 
 # shellcheck source=../scripts/lib/template-files.sh
@@ -42,8 +45,10 @@ while IFS= read -r rel; do                               # e.g. adrs/README.md
 done < <(template_files "${TEMPLATES_DIR}")
 
 if [ "${total}" -eq 0 ]; then
+  # The conventions were already printed above; a non-zero exit would make
+  # Claude Code discard that stdout, so degrade to a stderr warning instead.
   echo "stella-agentic-workflow-docs: no framework files found under ${TEMPLATES_DIR} — cannot check whether docs/ is bootstrapped." >&2
-  exit 1
+  exit 0
 fi
 
 if [ "${missing_count}" -gt 0 ]; then

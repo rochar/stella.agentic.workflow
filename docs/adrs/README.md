@@ -17,6 +17,9 @@ future work must respect). Rationale, forces, and options considered (including 
 belong in `problem.md`. History never accumulates in `decision.md`: status changes, revisits,
 and outcomes are one dated line each, appended to `log.md`.
 
+**Reading:** start with `decision.md`; open `problem.md` for rationale and `log.md` for
+history. Part files within a record stand alone — no links between them are needed.
+
 **Templates:** copy [`problem.template.md`](./problem.template.md),
 [`decision.template.md`](./decision.template.md) and [`log.template.md`](./log.template.md)
 from this folder. Template files are not records — never list them in the index.

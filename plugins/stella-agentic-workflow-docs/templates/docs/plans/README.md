@@ -17,6 +17,9 @@ considered) belongs in `problem.md`; if a step needs justification, the justific
 `problem.md`. A record may exist with only `problem.md` before a plan is written — index it
 with status `proposed`.
 
+**Reading:** start with `plan.md`; open `problem.md` for context and rationale. Part files
+within a record stand alone — no links between them are needed.
+
 **Templates:** copy [`problem.template.md`](./problem.template.md) and
 [`plan.template.md`](./plan.template.md) from this folder. Template files are not records —
 never list them in the index.

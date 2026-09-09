@@ -4,6 +4,8 @@
 # (which checks whether they are present) both source this file, so the
 # bootstrapper and the bootstrap check can never disagree about what is required.
 
+# Only *.md files count as framework files — the framework repo's checks.sh
+# rejects anything else in templates/docs so nothing is silently skipped here.
 # Prints one path per line, relative to the templates/docs/ tree.
 # Usage: template_files <templates_dir>
 template_files() {
