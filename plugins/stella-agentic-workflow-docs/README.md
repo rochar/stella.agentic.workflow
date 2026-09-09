@@ -57,5 +57,5 @@ document starts as a copy of its template; template files are not records and ar
 
 ## Installation
 
-See the [repository README](../../README.md#installing-the-docs-plugin-in-a-repository) for how
+See the [repository README](../../README.md#installation) for how
 to install this plugin in a repository via the `stella-agentic` marketplace.
