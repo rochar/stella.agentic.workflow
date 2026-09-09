@@ -49,7 +49,10 @@ downstream repositories install the framework is documented in `README.md`.
 
 ## Testing changes
 
-There is no build, linter, or test suite. To verify plugin changes by hand:
+There is no build or test suite. `bash scripts/checks.sh` runs every check below in one go,
+plus `shellcheck` on all shell scripts (skipped locally when shellcheck is not installed).
+CI (`.github/workflows/ci.yml`) runs the same script on pushes to `main` and on pull
+requests. The individual manual steps, if you need to run one in isolation:
 
 - `bash plugins/stella-agentic-workflow-docs/scripts/init-docs.sh <dir>` (run twice; the second
   run must report nothing to do)

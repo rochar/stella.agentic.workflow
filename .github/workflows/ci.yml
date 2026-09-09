@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # jq and shellcheck are preinstalled on ubuntu-latest runners.
+      - name: Run repository checks
+        run: bash scripts/checks.sh
