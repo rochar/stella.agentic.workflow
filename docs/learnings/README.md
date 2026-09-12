@@ -30,7 +30,8 @@ same `NNNN-slug` stem; references by number stay valid.
 with the lesson, keep the story under it. Template files are not records — never list them in
 the index.
 
-**Index line:** `- NNNN-slug — YYYY-MM-DD — one-line summary`
+**Index line:** `- NNNN-slug — YYYY-MM-DD — one-line summary` — keep the whole line at most
+120 characters.
 
 ## Index
 

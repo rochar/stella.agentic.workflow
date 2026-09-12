@@ -69,3 +69,6 @@ requests. The individual manual steps, if you need to run one in isolation:
   no differences in any `*.template.md` or in README prose. Once this repo records ADRs, plans,
   memories, or learnings of its own, the only expected differences are those record files and
   their index lines under `docs/`)
+- `wc -w plugins/stella-agentic-workflow-docs/context/docs-structure.md` (must stay within the
+  word budget set in `scripts/checks.sh` — the file is injected into every session of every
+  consuming repo)

@@ -35,7 +35,8 @@ same `NNNN-slug` stem; references by number stay valid.
 **Template:** copy [`memory.template.md`](./memory.template.md) from this folder. Template
 files are not records — never list them in the index.
 
-**Index line:** `- NNNN-slug — type — YYYY-MM-DD — one-line summary`
+**Index line:** `- NNNN-slug — type — YYYY-MM-DD — one-line summary` — keep the whole line
+at most 120 characters.
 
 ## Index
 

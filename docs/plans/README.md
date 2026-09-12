@@ -30,7 +30,7 @@ within a record stand alone — no links between them are needed.
 never list them in the index.
 
 **Index line:** `- NNNN-slug — status — YYYY-MM-DD — one-line summary` — keep the status
-current here whenever it changes.
+current here whenever it changes, and keep the whole line at most 120 characters.
 
 ## Index
 

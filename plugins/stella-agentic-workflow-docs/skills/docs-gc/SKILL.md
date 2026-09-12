@@ -65,6 +65,9 @@ Then work folder by folder (`adrs/`, `plans/`, `memories/`, `learnings/`):
 - Tighten one-line summaries in indexes, keep memories to one self-contained fact (split a
   record that grew a second fact into a new numbered record), make learnings lead with the
   lesson. Simplify wording only — never change what a record means.
+- Enforce each folder's split rule: content in the wrong part file — status history or
+  rationale in `decision.md`, investigation or justification in `plan.md` — is moved to the
+  part the folder README assigns it to. Move, never delete.
 
 ## Boundaries
 

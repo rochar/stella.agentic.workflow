@@ -8,6 +8,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_DIR="${REPO_ROOT}/plugins/stella-agentic-workflow-docs"
 TEMPLATES_DIR="${PLUGIN_DIR}/templates/docs"
 DOCS_DIR="${REPO_ROOT}/docs"
+CONTEXT_FILE="${PLUGIN_DIR}/context/docs-structure.md"
 
 failures=0
 fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
@@ -78,7 +79,7 @@ fi
 
 # --- 4. session-start.sh hook smoke test ------------------------------------
 note "session-start.sh hook"
-context_probe="$(head -n 1 "${PLUGIN_DIR}/context/docs-structure.md")"
+context_probe="$(head -n 1 "${CONTEXT_FILE}")"
 
 empty="${TMP_ROOT}/empty"
 mkdir -p "${empty}"
@@ -199,10 +200,19 @@ while IFS= read -r rel; do
       # Additions (index lines) are fine; changed or removed template prose is not.
       # (diff exits 1 on any difference, so under pipefail its output is
       # captured and tested rather than used as a pipeline exit status.)
-      removed="$(diff -u "${tmpl}" "${inst}" | grep '^-' | grep -v '^--- ' || true)"
+      readme_diff="$(diff -u "${tmpl}" "${inst}" || true)"
+      removed="$(printf '%s' "${readme_diff}" | grep '^-' | grep -v '^--- ' || true)"
       if [ -n "${removed}" ]; then
         fail "README prose diverged from template (only added index lines are allowed): docs/${rel}"
       fi
+      # The added lines are index lines; the folder READMEs cap them at 120 characters.
+      while IFS= read -r added; do
+        added="${added#+}"
+        [ -n "${added}" ] || continue
+        if [ "${#added}" -gt 120 ]; then
+          fail "index line over 120 characters (${#added}) in docs/${rel}: ${added}"
+        fi
+      done < <(printf '%s' "${readme_diff}" | grep '^+' | grep -v '^+++ ' || true)
       ;;
     *)
       if ! cmp -s "${tmpl}" "${inst}"; then
@@ -223,6 +233,24 @@ while IFS= read -r rel; do
   fi
 done < <(cd "${DOCS_DIR}" && find . -type f | sed 's|^\./||' | sort)
 [ "${failures}" -eq "${failures_before}" ] && echo "ok: scaffold in sync"
+
+# --- 6. Injected context stays within its word budget ------------------------
+# context/docs-structure.md is added to every session of every consuming repo;
+# CLAUDE.md requires it to stay a thin pointer. The budget is a ratchet against
+# creep — if a change genuinely needs more room, raise it deliberately here.
+note "injected context word budget"
+CONTEXT_WORD_BUDGET=200
+if [ -f "${CONTEXT_FILE}" ]; then
+  # wc -w is the same command CLAUDE.md documents for the manual check.
+  context_words="$(( $(wc -w < "${CONTEXT_FILE}") ))"
+  if [ "${context_words}" -le "${CONTEXT_WORD_BUDGET}" ]; then
+    echo "ok: context/docs-structure.md is ${context_words} words (budget ${CONTEXT_WORD_BUDGET})"
+  else
+    fail "context/docs-structure.md is ${context_words} words, over the ${CONTEXT_WORD_BUDGET}-word budget — it is injected into every session of every consuming repo; trim it or move detail into the folder READMEs"
+  fi
+else
+  fail "injected context file is missing (was it moved without updating checks.sh?): ${CONTEXT_FILE}"
+fi
 
 # --- summary -----------------------------------------------------------------
 echo
