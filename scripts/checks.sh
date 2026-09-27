@@ -13,6 +13,8 @@ CONTEXT_FILE="${PLUGIN_DIR}/context/docs-structure.md"
 failures=0
 fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
 note() { echo; echo "==> $*"; }
+# Character count independent of locale (${#var} counts bytes under LC_ALL=C).
+char_len() { printf '%s' "$1" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '; }
 
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "${TMP_ROOT}"' EXIT
@@ -91,8 +93,21 @@ case "${hook_out}" in
   *) fail "hook did not print context/docs-structure.md" ;;
 esac
 case "${hook_out}" in
-  *"not fully bootstrapped"*) echo "ok: hook flags a missing docs/ tree" ;;
-  *) fail "hook did not flag the missing docs/ tree" ;;
+  *"not fully bootstrapped"*"docs-init"*) echo "ok: hook flags a missing docs/ tree" ;;
+  *) fail "hook did not flag the missing docs/ tree (or did not point at docs-init)" ;;
+esac
+
+# A partial tree (typically an older plugin version's bootstrap) needs the
+# doctor, not just docs-init's backfill.
+partial="${TMP_ROOT}/partial"
+bash "${PLUGIN_DIR}/scripts/init-docs.sh" "${partial}" >/dev/null
+rm -r "${partial}/docs/specs"
+hook_out="$(CLAUDE_PROJECT_DIR="${partial}" CLAUDE_PLUGIN_ROOT="${PLUGIN_DIR}" \
+  bash "${PLUGIN_DIR}/hooks-handlers/session-start.sh")" \
+  || fail "hook exited non-zero in a partially bootstrapped repo"
+case "${hook_out}" in
+  *"not fully bootstrapped"*"docs-doctor"*) echo "ok: hook points a partial docs/ tree at docs-doctor" ;;
+  *) fail "hook did not point a partial docs/ tree at docs-doctor: ${hook_out}" ;;
 esac
 
 hook_out="$(CLAUDE_PROJECT_DIR="${target}" CLAUDE_PLUGIN_ROOT="${PLUGIN_DIR}" \
@@ -209,8 +224,9 @@ while IFS= read -r rel; do
       while IFS= read -r added; do
         added="${added#+}"
         [ -n "${added}" ] || continue
-        if [ "${#added}" -gt 120 ]; then
-          fail "index line over 120 characters (${#added}) in docs/${rel}: ${added}"
+        len="$(char_len "${added}")"
+        if [ "${len}" -gt 120 ]; then
+          fail "index line over 120 characters (${len}) in docs/${rel}: ${added}"
         fi
       done < <(printf '%s' "${readme_diff}" | grep '^+' | grep -v '^+++ ' || true)
       ;;
@@ -233,6 +249,97 @@ while IFS= read -r rel; do
   fi
 done < <(cd "${DOCS_DIR}" && find . -type f | sed 's|^\./||' | sort)
 [ "${failures}" -eq "${failures_before}" ] && echo "ok: scaffold in sync"
+
+# --- 5b. doctor-docs.sh: clean trees pass, drift is found and repaired -------
+note "doctor-docs.sh"
+DOCTOR="${PLUGIN_DIR}/scripts/doctor-docs.sh"
+
+fresh="${TMP_ROOT}/doctor-fresh"
+mkdir -p "${fresh}"
+bash "${PLUGIN_DIR}/scripts/init-docs.sh" "${fresh}" >/dev/null
+if bash "${DOCTOR}" "${fresh}" >/dev/null; then
+  echo "ok: a fresh bootstrap conforms"
+else
+  fail "doctor reports findings on a fresh bootstrap (a template folder without a layout in layout_of()?)"
+fi
+if bash "${DOCTOR}" "${REPO_ROOT}" >/dev/null; then
+  echo "ok: this repository's docs/ conforms"
+else
+  fail "doctor reports findings on this repository's docs/: run scripts/doctor-docs.sh here"
+fi
+
+drift="${TMP_ROOT}/doctor-drift"
+cp -R "${fresh}" "${drift}"
+index_line="- 0001-add-cache — done — 2026-01-01 — Cache responses"
+mkdir -p "${drift}/docs/plans/0001-add-cache"
+sed 's/^- Status: .*/- Status: done/; s/^- Date: .*/- Date: 2026-01-01/; s/^# NNNN — .*/# 0001 — Add cache/' \
+  "${TEMPLATES_DIR}/plans/plan.template.md" | grep -v '^<' > "${drift}/docs/plans/0001-add-cache/plan.md"
+sed -i.bak "s/^_No plans yet\._\$/${index_line}/; s/^Plans produced/Plans (old wording) produced/" \
+  "${drift}/docs/plans/README.md" && rm "${drift}/docs/plans/README.md.bak"
+echo "stale" >> "${drift}/docs/adrs/decision.template.md"
+echo "# old" > "${drift}/docs/plans/problem.template.md"
+rm "${drift}/docs/specs/README.md"
+echo "# 0001 — Wrong layout" > "${drift}/docs/memories/0001-wrong-layout.txt"
+
+doctor_out="$(bash "${DOCTOR}" "${drift}")" && fail "doctor exited 0 on a drifted tree"
+for code in README_DRIFT TEMPLATE_DRIFT OBSOLETE_TEMPLATE MISSING BAD_NAME; do
+  case "${doctor_out}" in
+    *"] ${code} "*) echo "ok: doctor reports ${code}" ;;
+    *) fail "doctor did not report ${code}: ${doctor_out}" ;;
+  esac
+done
+case "${doctor_out}" in
+  *0001-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+esac
+
+bash "${DOCTOR}" --fix "${drift}" >/dev/null
+if grep -qxF -- "${index_line}" "${drift}/docs/plans/README.md" \
+  && cmp -s <(sed '/^## Index$/q' "${TEMPLATES_DIR}/plans/README.md") \
+            <(sed '/^## Index$/q' "${drift}/docs/plans/README.md"); then
+  echo "ok: --fix refreshes README prose and keeps index lines"
+else
+  fail "--fix did not refresh docs/plans/README.md prose while keeping its index line"
+fi
+if [ ! -e "${drift}/docs/plans/problem.template.md" ] && [ -f "${drift}/docs/specs/README.md" ] \
+  && cmp -s "${TEMPLATES_DIR}/adrs/decision.template.md" "${drift}/docs/adrs/decision.template.md"; then
+  echo "ok: --fix repairs missing, drifted, and obsolete scaffold files"
+else
+  fail "--fix did not repair the scaffold"
+fi
+# OS metadata files are never findings; --fix never deletes a *.template.md
+# inside a record or in a folder the plugin does not own; index-line length
+# counts characters, not bytes, whatever the locale.
+touch "${drift}/docs/.DS_Store" "${drift}/docs/plans/0001-add-cache/.DS_Store"
+mkdir -p "${drift}/docs/guides"
+echo "# team template" > "${drift}/docs/guides/runbook.template.md"
+cp "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/0001-add-cache/plan.template.md"
+mkdir -p "${drift}/docs/plans/0003-long-summary"
+printf '# 0003 — Long summary\n\n- Status: abandoned\n- Spec: none\n- ADRs: none\n- Date: 2026-01-03\n' \
+  > "${drift}/docs/plans/0003-long-summary/plan.md"
+# exactly 120 characters (126 bytes: each em dash is three)
+long_line="- 0003-long-summary — abandoned — 2026-01-03 — $(printf 'x%.0s' $(seq 1 73))"
+echo "${long_line}" >> "${drift}/docs/plans/README.md"
+doctor_out="$(LC_ALL=C bash "${DOCTOR}" --fix "${drift}")"
+case "${doctor_out}" in
+  *.DS_Store*|*LINE_TOO_LONG*) fail "doctor flagged OS metadata or a <=120-char index line: ${doctor_out}" ;;
+esac
+if [ -f "${drift}/docs/guides/runbook.template.md" ] && [ -f "${drift}/docs/plans/0001-add-cache/plan.template.md" ]; then
+  echo "ok: --fix leaves templates outside the scaffold locations alone"
+else
+  fail "--fix deleted a *.template.md outside the plugin's scaffold locations"
+fi
+rm -r "${drift}/docs/guides" "${drift}/docs/plans/0001-add-cache/plan.template.md"
+# An abandoned record may be a pointer stub without the template's sections.
+mkdir -p "${drift}/docs/plans/0002-old-pointer"
+printf '# 0002 — Old pointer\n\n- Status: abandoned\n- Spec: none\n- ADRs: none\n- Date: 2026-01-02\n\nMoved to spec 0001-x.\n' \
+  > "${drift}/docs/plans/0002-old-pointer/plan.md"
+echo "- 0002-old-pointer — abandoned — 2026-01-02 — Moved to spec 0001-x" >> "${drift}/docs/plans/README.md"
+rm "${drift}/docs/memories/0001-wrong-layout.txt"
+if LC_ALL=C bash "${DOCTOR}" "${drift}" >/dev/null; then
+  echo "ok: tree conforms once the record finding is resolved (abandoned pointer stub allowed)"
+else
+  fail "doctor still reports findings after --fix and the record fix: $(bash "${DOCTOR}" "${drift}")"
+fi
 
 # --- 6. Injected context stays within its word budget ------------------------
 # context/docs-structure.md is added to every session of every consuming repo;

@@ -54,7 +54,14 @@ fi
 if [ "${missing_count}" -gt 0 ]; then
   echo ""
   echo "NOTE: docs/ is not fully bootstrapped (${missing_count} of ${total} framework files missing):${missing}"
-  echo "Run /stella-agentic-workflow-docs:docs-init (or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create them before writing any docs."
+  if [ "${missing_count}" -lt "${total}" ]; then
+    # Some framework files exist: most likely a bootstrap from an older plugin
+    # version. docs-init would only add the missing files; the other scaffold
+    # files (folder READMEs, templates) may be outdated too, which docs-doctor fixes.
+    echo "Run /stella-agentic-workflow-docs:docs-doctor to bring docs/ up to date with the plugin before writing any docs."
+  else
+    echo "Run /stella-agentic-workflow-docs:docs-init (or execute \"${PLUGIN_ROOT}/scripts/init-docs.sh\") to create them before writing any docs."
+  fi
 fi
 
 exit 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stop hook for stella-agentic-workflow-docs.
 # Nudges the agent once per session to record anything durable the session
-# produced (decision, plan, memory, learning) in docs/.
+# produced (decision, spec, plan, memory, learning) in docs/.
 #
 # Claude Code fires Stop at the end of every assistant turn, not once per
 # session, so this hook keeps a per-session marker file (keyed on the payload's
@@ -70,5 +70,5 @@ if [ -n "${marker}" ]; then
 fi
 
 cat <<'EOF'
-{"decision": "block", "reason": "stella-agentic-workflow-docs: before finishing, check whether this session produced anything durable — an architectural decision (docs/adrs/), a plan worth keeping (docs/plans/), a fact a future session would otherwise rediscover (docs/memories/), or a lesson from something that failed (docs/learnings/). Each folder's README.md defines when a record qualifies and how to write it; update the folder index in the same change. If nothing qualifies — true for most sessions — finish now; do not invent records."}
+{"decision": "block", "reason": "stella-agentic-workflow-docs: before finishing, check whether this session produced anything durable — an architectural decision (docs/adrs/), a spec (docs/specs/), a plan worth keeping (docs/plans/), a fact a future session would otherwise rediscover (docs/memories/), or a lesson from something that failed (docs/learnings/). Each folder's README.md defines when a record qualifies and how to write it; update the folder index in the same change. If nothing qualifies — true for most sessions — finish now; do not invent records."}
 EOF

@@ -1,34 +1,36 @@
 ---
 name: docs-gc
-description: Garden the agentic docs/ tree (adrs, plans, memories, learnings) - fix index drift, re-verify or retire stale memories, mark obsolete learnings, merge near-duplicates, and tighten record prose, all without erasing history. Use when asked to review, clean up, or garden the docs/ records.
+description: Garden the content of the agentic docs/ records (adrs, specs, plans, memories, learnings) - re-verify or retire stale memories, mark obsolete learnings, merge near-duplicates, update dead spec and plan statuses, and tighten record prose, all without erasing history. Use when asked to review, clean up, or garden the docs/ records, or to check whether they are still accurate. For structure (layout, naming, templates, indexes, plugin upgrades) use docs-doctor instead.
 ---
 
-Garden the agentic `docs/` tree: keep it trustworthy and cheap to skim. This is a gardening
-pass, not a purge — the conventions deliberately keep history (stable record numbers, index
-lines that never disappear), so nothing in this skill erases the past.
+Garden the agentic `docs/` records: keep what they say trustworthy and cheap to skim. This is
+a gardening pass, not a purge — the conventions deliberately keep history (stable record
+numbers, index lines that never disappear), so nothing in this skill erases the past.
+
+This skill is about content — whether records are still true, current, and distinct. Their
+shape (scaffold, layout, naming, fields, index-line format) is the `docs-doctor` skill's job,
+checked by the same script this skill starts with.
 
 Before touching anything:
 
-1. If `docs/` is missing or not fully bootstrapped (any file of the plugin's `templates/docs/`
-   scaffold absent — folder `README.md` indexes or `*.template.md` templates — the same
-   definition the hooks use), stop and suggest running the `docs-init` skill instead.
+1. Run the structural check:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/doctor-docs.sh"
+   ```
+
+   If it reports any `[scaffold]` or `[record]` finding (it exits non-zero), stop and suggest
+   running the `docs-doctor` skill first — gardening records whose structure is off means
+   guessing where things belong. `[stray]` items are advisory and do not block this pass.
 2. Read each folder's `README.md` — they are the source of truth for naming, statuses,
    index-line formats, and retirement rules. Where a folder README and this skill disagree,
    the folder README wins.
 
-Then work folder by folder (`adrs/`, `plans/`, `memories/`, `learnings/`):
+Then work folder by folder (`adrs/`, `specs/`, `plans/`, `memories/`, `learnings/`). Every
+change below that touches a status, a retirement suffix, or a summary updates the record and
+its index line together.
 
-## 1. Index integrity
-
-- Every record has exactly one index line and every index line points to an existing record.
-  The one allowed exception is a memory line suffixed `— deleted`, whose file is gone by
-  design; an `— obsolete` learning keeps its file, so an `— obsolete` line with no file behind
-  it is drift to flag.
-- Index lines follow the folder's format; the status or type in the line matches the record
-  body; template files (`*.template.md`) are never indexed.
-- Fix mechanical drift like this directly.
-
-## 2. Memories — staleness
+## 1. Memories — staleness
 
 - For each memory whose `## Verify` section describes a safe, read-only check (inspect a file,
   run a command with no side effects), run it. Confirmed → update `Verified:` to today. Wrong →
@@ -37,7 +39,7 @@ Then work folder by folder (`adrs/`, `plans/`, `memories/`, `learnings/`):
 - A memory no longer relevant at all: delete the file, keep its index line suffixed
   `— deleted`.
 
-## 3. Learnings — obsolescence
+## 2. Learnings — obsolescence
 
 - A learning is never re-verified (it records a past event), but its lesson can stop applying —
   the gotcha fixed upstream, or a guard now prevents the mistake structurally. When the repo
@@ -46,28 +48,30 @@ Then work folder by folder (`adrs/`, `plans/`, `memories/`, `learnings/`):
   its index line `— obsolete`.
 - No clear evidence → report the suspicion, change nothing.
 
-## 4. Duplicates
+## 3. Duplicates
 
 - Near-duplicate memories or learnings: merge the content into the older record, then retire
   the newer one per its folder's rule (memories: delete + `— deleted`; learnings: obsolete
   with a why that points at the kept record, e.g. `merged into 0003-…`).
 
-## 5. ADRs and plans — status hygiene
+## 4. ADRs, specs, and plans — status hygiene
 
+- A spec whose acceptance criteria demonstrably hold (or whose work was dropped) but is still
+  marked `draft`/`approved`: update the status in `spec.md` and its index line.
 - A plan whose work is demonstrably finished or abandoned (check git history) but still marked
   `proposed`/`in-progress`: update the status in `plan.md` and its index line.
 - ADR statuses change only with evidence, recorded as a dated line in the record's `log.md`.
   Superseding an ADR requires writing a new one — out of scope here; report it instead.
-- Never delete or rewrite ADR or plan records; they are kept history even when dead.
+- Never delete or rewrite ADR, spec, or plan records; they are kept history even when dead.
 
-## 6. Prose
+## 5. Prose
 
 - Tighten one-line summaries in indexes, keep memories to one self-contained fact (split a
   record that grew a second fact into a new numbered record), make learnings lead with the
   lesson. Simplify wording only — never change what a record means.
-- Enforce each folder's split rule: content in the wrong part file — status history or
-  rationale in `decision.md`, investigation or justification in `plan.md` — is moved to the
-  part the folder README assigns it to. Move, never delete.
+- Enforce each folder's split rule: status history or rationale in `decision.md` is moved to
+  the part the folder README assigns it to — move, never delete. A spec carrying design or
+  steps, or a plan carrying requirements, spans two records: flag it in the report instead.
 
 ## Boundaries
 
@@ -80,6 +84,11 @@ Then work folder by folder (`adrs/`, `plans/`, `memories/`, `learnings/`):
   retired record keeps its index line.
 - When unsure whether something is stale, obsolete, or duplicate: flag it in the report and
   leave it unchanged.
+
+## Verify
+
+Re-run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/doctor-docs.sh"`: the pass must leave the tree as
+structurally clean as it found it (retirements and merges included).
 
 ## Report
 

@@ -23,9 +23,11 @@ Two consequences of that goal shape most decisions here:
 - `plugins/stella-agentic-workflow-docs/` — the docs-structure plugin: hooks (`hooks/hooks.json`
   with a SessionStart handler `hooks-handlers/session-start.sh` and a Stop handler
   `hooks-handlers/stop.sh`), injected context (`context/docs-structure.md`), bootstrap
-  (`scripts/init-docs.sh` copying `templates/docs/`), and the `docs-init` (bootstrap) and
-  `docs-gc` (gardening) skills. Details in its `README.md`.
-- `docs/` — this repo's own instance of the structure (adrs, plans, memories, learnings).
+  (`scripts/init-docs.sh` copying `templates/docs/`), a structural checker
+  (`scripts/doctor-docs.sh`, deriving its checks from `templates/docs/`), and the `docs-init`
+  (bootstrap), `docs-doctor` (conformance and migration), and `docs-gc` (gardening) skills.
+  Details in its `README.md`.
+- `docs/` — this repo's own instance of the structure (adrs, specs, plans, memories, learnings).
 
 Naming constraint: Claude Code requires kebab-case plugin and marketplace names (no dots), so
 the plugin is `stella-agentic-workflow-docs` and the marketplace is `stella-agentic`. How
@@ -64,6 +66,8 @@ requests. The individual manual steps, if you need to run one in isolation:
   plugins/stella-agentic-workflow-docs/hooks-handlers/stop.sh` (must emit a block decision only
   when `<dir>/docs` is fully bootstrapped; with `"stop_hook_active": true`, or with a
   `"session_id"` whose session was already nudged, it must print nothing)
+- `bash plugins/stella-agentic-workflow-docs/scripts/doctor-docs.sh <dir>` (exit 0 on a fresh
+  bootstrap and on this repo; `--fix` repairs scaffold drift but never touches records)
 - validate every JSON file parses (e.g. `jq empty <file>`)
 - `diff -r docs plugins/stella-agentic-workflow-docs/templates/docs` (the scaffold must match:
   no differences in any `*.template.md` or in README prose. Once this repo records ADRs, plans,
