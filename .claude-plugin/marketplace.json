@@ -9,7 +9,7 @@
     {
       "name": "stella-agentic-workflow-docs",
       "displayName": "stella.agentic.workflow.docs",
-      "description": "Standard docs/ structure (adrs, plans, memories, learnings) so agents leave durable, indexed knowledge behind in every repository.",
+      "description": "Standard docs/ structure (adrs, specs, plans, memories, learnings) so agents leave durable, indexed knowledge behind in every repository.",
       "source": "./plugins/stella-agentic-workflow-docs",
       "category": "workflow",
       "author": {

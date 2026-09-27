@@ -1,8 +1,8 @@
 # stella.agentic.workflow
 
 Give every AI agent working in your repositories a shared, durable memory — owned by the team,
-not by one machine. This framework installs a standard `docs/` structure — decisions, plans,
-memories, learnings — into your repository and teaches it to every Claude Code session
+not by one machine. This framework installs a standard `docs/` structure — decisions, specs,
+plans, memories, learnings — into your repository and teaches it to every Claude Code session
 automatically, so agents leave knowledge behind instead of rediscovering it, across sessions,
 collaborators, and repositories.
 
@@ -14,7 +14,8 @@ After installing and bootstrapping, your repository contains:
 docs/
 ├── README.md          # entry point, links to the indexes below
 ├── adrs/              # architectural & design decision records
-├── plans/             # plans produced by agents, skills, or workflows
+├── specs/             # specifications: what to build and why
+├── plans/             # plans: how to build it
 ├── memories/          # durable facts agents learned about the repository
 └── learnings/         # lessons learned: failures, gotchas, corrections
 ```
@@ -41,7 +42,7 @@ two:
   convention (hooks, injected context, skills) reach all of them without copy-pasting between
   `CLAUDE.md` files. The bootstrapped `docs/` scaffold is committed to each repository and
   never overwritten, so its README prose changes only when you update it there.
-- **Structured** — typed records (decisions, plans, memories, learnings) with templates and
+- **Structured** — typed records (decisions, specs, plans, memories, learnings) with templates and
   per-folder indexes, instead of freeform notes.
 
 ## Installation
@@ -103,6 +104,22 @@ With the plugin installed, create the `docs/` tree once and commit the result:
 The bootstrap is idempotent and never overwrites existing files, so it is safe to run in a
 repository that already has a `docs/` folder — it only fills in what is missing.
 
+### Reconcile existing or outdated docs
+
+If the repository already kept decisions, plans, or notes its own way, after updating the
+plugin, or whenever records were written without following the structure, run the doctor:
+
+```
+/stella-agentic-workflow-docs:docs-doctor
+```
+
+It repairs the scaffold (missing, drifted, or obsolete README indexes and templates — keeping
+your index lines), migrates records in an older or ad-hoc layout to the current one, adopts
+knowledge found elsewhere as proper records, and fixes index lines — leaving other
+documentation in `docs/` alone. The structural checks come from a script you can also run
+on its own, e.g. in CI: `scripts/doctor-docs.sh` in the plugin exits non-zero when `docs/`
+does not conform. It never commits; review the diff like any other change.
+
 ### Garden it over time
 
 Records accumulate and some go stale. Run the gardening skill occasionally to keep the tree
@@ -112,10 +129,11 @@ trustworthy:
 /stella-agentic-workflow-docs:docs-gc
 ```
 
-It fixes index drift, re-verifies or retires stale memories, marks learnings whose lesson no
-longer applies as obsolete, merges near-duplicates, and updates dead plan statuses — without
-erasing history (retired records keep their index lines, so record numbers stay stable). It
-never commits; review the diff like any other change.
+It re-verifies or retires stale memories, marks learnings whose lesson no longer applies as
+obsolete, merges near-duplicates, and updates dead spec and plan statuses — without erasing
+history (retired records keep their index lines, so record numbers stay stable). It checks the
+structure first and defers to `docs-doctor` if that is off. It never commits; review the diff
+like any other change.
 
 ## How it works
 
@@ -136,7 +154,8 @@ and bootstraps the convention; your repository owns the data.
 | Folder | What goes there | When |
 | --- | --- | --- |
 | `docs/adrs/` | Architectural and design decision records | At decision time |
-| `docs/plans/` | Plans from agents, skills, or workflows | Before execution, updated as work progresses |
+| `docs/specs/` | Specifications: what to build and why | When a problem or requirement is worth writing down |
+| `docs/plans/` | Plans: how to build it | Before execution, updated as work progresses |
 | `docs/memories/` | Durable facts not derivable from code or git history | Whenever a session learns something a future session would otherwise rediscover |
 | `docs/learnings/` | Failed approaches, corrections, gotchas, post-mortems | Whenever something didn't work as expected |
 

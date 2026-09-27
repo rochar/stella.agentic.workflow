@@ -8,6 +8,7 @@ deeper — never up to this file or to CLAUDE.md.
 | Folder (link = index) | Contents |
 | --- | --- |
 | [adrs/](./adrs/README.md) | Architectural and design decision records |
+| [specs/](./specs/README.md) | Specifications: what to build and why |
 | [plans/](./plans/README.md) | Plans produced by agents, skills, or workflows |
 | [memories/](./memories/README.md) | Durable facts agents learned about this repository |
 | [learnings/](./learnings/README.md) | Lessons learned: failures, gotchas, corrections |
