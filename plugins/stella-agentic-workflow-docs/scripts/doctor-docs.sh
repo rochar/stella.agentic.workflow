@@ -2,9 +2,8 @@
 # Diagnoses how far a repository's docs/ tree is from the conventions of the
 # plugin's templates/docs/ scaffold — the structural half of the docs-doctor
 # skill. Everything it checks is derived from templates/docs/ (scaffold files,
-# part files, template fields and sections, index-line formats), so a template
-# change is picked up here automatically; only each folder's record layout
-# (directory vs single file) is encoded below, mirroring the folder READMEs.
+# record prefixes, front-matter keys and vocabularies, sections, index-line
+# formats), so a template change is picked up here automatically.
 #
 # Usage: doctor-docs.sh [--fix] [target-dir]
 #   --fix  also repair scaffold findings in place: create missing scaffold
@@ -57,16 +56,20 @@ fixed() { # code path message
   n_fixed=$((n_fixed + 1))
 }
 
-# Record layout per folder, as the folder READMEs' Naming rules define it:
-# "dir <main part>" for NNNN-slug/ directories, "file" for NNNN-slug.md files.
-layout_of() {
-  case "$1" in
-    adrs) echo "dir decision.md" ;;
-    specs) echo "dir spec.md" ;;
-    plans) echo "dir plan.md" ;;
-    memories|learnings) echo "file" ;;
-    *) echo "unknown" ;;
-  esac
+# awk helper shared by every front-matter reader: a value as YAML reads it —
+# trimmed, its surrounding quotes removed, or else a trailing `# comment` dropped.
+FM_VAL_AWK='function val(s,   q, j) {
+  sub(/^[ \t]+/, "", s); q = substr(s, 1, 1)
+  if (q == "\"" || q == "\047") { j = index(substr(s, 2), q); if (j) return substr(s, 2, j - 1) }
+  sub(/[ \t]+#.*$/, "", s); sub(/^#.*$/, "", s); sub(/[ \t]+$/, "", s)
+  return s
+}'
+
+# Value of a YAML front-matter key (first `---` block).
+fm_value() { # file key
+  awk -v k="$2" "${FM_VAL_AWK}"'
+    NR==1 && $0!="---" {exit} NR>1 && $0=="---" {exit}
+    NR>1 && index($0, k ":")==1 { print val(substr($0, length(k) + 2)); exit }' "$1"
 }
 
 # Rebuilds a folder README: the template's prose up to `## Index`, followed by
@@ -76,7 +79,7 @@ rebuild_readme() { # template current
   if grep -q '^## Index$' "${cur}"; then
     body="$(sed -n '/^## Index$/,$p' "${cur}" | sed '1d')"
   else
-    body="$(grep -E '^- [0-9]{4}-' "${cur}" || true)"
+    body="$(grep -E '^- ([A-Z]+-)?[0-9]{4}-' "${cur}" || true)" # old unprefixed lines too
   fi
   body="$(printf '%s\n' "${body}" | grep -vE '^_No .* yet\._$' | sed '/./,$!d' || true)"
   sed '/^## Index$/q' "${tmpl}"
@@ -189,62 +192,109 @@ if [ -d "${DOCS_DIR}" ]; then
 fi
 
 # --- 2. Records and indexes --------------------------------------------------
-# Checks one record part against its template: title, metadata fields (the
-# `- Key:` lines above the first section) and their vocabularies, required sections, unfilled placeholder text.
-check_part() { # template part-file record-number
-  local tmpl="$1" part="$2" num="$3" rp key vocab value line heading
-  rp="$(rel_path "${part}")"
-  if ! head -n 1 "${part}" | grep -qE "^# ${num} — ."; then
-    report record BAD_TITLE "${rp}" "first line must be \`# ${num} — <title>\`"
-  fi
-  while IFS= read -r line; do
-    key="${line#- }"; key="${key%%:*}"
-    vocab="${line#*: }"
-    value="$(sed -n "s/^- ${key}: *//p" "${part}" | head -n 1)"
-    if ! grep -qE "^- ${key}:" "${part}"; then
-      report record MISSING_FIELD "${rp}" "no \`- ${key}:\` line"
-      continue
-    fi
-    case "${vocab}" in
-      YYYY-MM-DD)
-        printf '%s' "${value}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
-          || report record INVALID_VALUE "${rp}" "${key} '${value}' is not YYYY-MM-DD"
-        ;;
-      *"<"*) : ;; # free text
-      *" | "*)
-        pattern="$(printf '%s' "${vocab}" | sed 's/ | /|/g; s/NNNN/[0-9]{4}/g')"
-        printf '%s' "${value}" | grep -qxE "(${pattern})" \
-          || report record INVALID_VALUE "${rp}" "${key} '${value}' is not one of: ${vocab}"
-        ;;
-    esac
-  done < <(awk '/^## /{exit} {print}' "${tmpl}" | grep -E '^- [A-Z][A-Za-z]*: ')
-  # An abandoned record is history and may be kept as a pointer stub (metadata
-  # plus one line saying where its content went), so its sections are not required.
-  grep -qE '^- Status: abandoned$' "${part}" && return 0
-  # A `## ` section is required unless its first line is an `<optional...` hint.
-  while IFS= read -r heading; do
-    grep -qxF "${heading}" "${part}" \
-      || report record MISSING_SECTION "${rp}" "no \`${heading}\` section"
-  done < <(awk '/^## /{h=$0; next} h!="" && NF{ if ($0 !~ /^<optional/) print h; h="" }' "${tmpl}")
-  while IFS= read -r line; do
-    if grep -qxF "${line}" "${part}"; then
-      report record UNFILLED_PLACEHOLDER "${rp}" "still contains template text: ${line}"
-      break
-    fi
-  done < <(grep -E '^<' "${tmpl}")
+# Checks one record against its folder's template in a single awk pass (the
+# template, then the record) and prints one `CODE<US>message` line per finding.
+# Front matter: present and closed; every template key present; a `# a | b`
+# comment is the value vocabulary; YYYY-MM-DD is a date; a <placeholder> needs a
+# real value; any other value with NNNN must name this record (prefix + number);
+# an empty template value is optional, but `superseded-by` is required exactly
+# when `status` is superseded; every value must be valid YAML as written.
+# Body: every `## ` section unless its first line is an `<optional...` hint,
+# every `Label: <...>` line (e.g. an ADR's `Binds:`) filled in, and no line left
+# as the template's placeholder text. An abandoned record is history and may be
+# kept as a pointer stub (front matter plus one line saying where its content
+# went), so its body is not checked.
+RECORD_AWK="${FM_VAL_AWK}"'
+FNR == 1 { f++; s = ($0 == "---") ? "fm" : "body"; if (f == 2) hasfm = (s == "fm"); if (s == "fm") next }
+s == "fm" && $0 == "---" { s = "body"; if (f == 2) closed = 1; next }
+s == "fm" {
+  i = index($0, ":"); if (!i) next
+  k = substr($0, 1, i - 1); v = substr($0, i + 1)
+  if (f == 1) {
+    if (!(k in tval)) { keys[++n] = k; tval[k] = val(v); j = index(v, " # "); tcom[k] = j ? substr(v, j + 3) : "" }
+  } else if (!(k in rval)) {
+    rkeys[++rn] = k; rval[k] = val(v); r = v; sub(/^[ \t]+/, "", r); quoted[k] = (r ~ /^["\047]/)
+  }
+  next
+}
+f == 1 {
+  if ($0 ~ /^## /) { h = $0; next }
+  if (h != "" && NF) { if ($0 !~ /^<optional/) need[++nh] = h; h = "" }
+  if ($0 ~ /^</) ph[++np] = $0
+  else if ($0 ~ /^[A-Za-z][A-Za-z -]*: </) { ph[++np] = $0; lab[++nl] = substr($0, 1, index($0, ":")) }
+  next
+}
+{
+  have[$0] = 1
+  for (x = 1; x <= nl; x++) if (index($0, lab[x]) == 1) {
+    r = substr($0, length(lab[x]) + 1); gsub(/[ \t]/, "", r); if (r != "") hasl[x] = 1
+  }
+}
+END {
+  if (!hasfm) print "MISSING_FRONT_MATTER\037must start with a `---` front-matter block"
+  else if (!closed) print "MISSING_FRONT_MATTER\037front matter has no closing `---` line"
+  for (x = 1; hasfm && x <= n; x++) {
+    k = keys[x]; t = tval[k]; c = tcom[k]
+    if (!(k in rval)) { print "MISSING_FIELD\037no `" k ":` in front matter"; continue }
+    v = rval[k]
+    if (t == "") continue # optional
+    if (t == "YYYY-MM-DD") {
+      if (v !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print "INVALID_VALUE\037" k " \047" v "\047 is not YYYY-MM-DD"
+    } else if (index(c, " | ")) {
+      m = split(c, opt, " [|] "); ok = 0
+      for (y = 1; y <= m; y++) if (v == opt[y]) ok = 1
+      if (!ok) print "INVALID_VALUE\037" k " \047" v "\047 is not one of: " c
+    } else if (substr(t, 1, 1) == "<") {
+      if (v == "") print "MISSING_FIELD\037`" k ":` is empty"
+      else if (substr(v, 1, 1) == "<") print "UNFILLED_PLACEHOLDER\037`" k ":` still contains template text"
+    } else if (index(t, "NNNN")) {
+      w = t; sub(/NNNN/, num, w)
+      if (v != w) print "INVALID_VALUE\037" k " \047" v "\047 must be " w
+    }
+  }
+  if (hasfm && ("superseded-by" in tval)) {
+    v = rval["superseded-by"]
+    if (rval["status"] == "superseded") {
+      if (v !~ ("^" prefix "[0-9][0-9][0-9][0-9]$")) print "INVALID_VALUE\037status superseded needs `superseded-by: " prefix "NNNN`"
+    } else if (v != "") print "INVALID_VALUE\037superseded-by is set but status is not superseded"
+  }
+  # Unquoted, a value with `: ` or a leading YAML indicator breaks every YAML reader.
+  for (x = 1; x <= rn; x++) {
+    k = rkeys[x]; v = rval[k]
+    if (!quoted[k] && (v ~ /: |:$/ || v ~ /^([][{},&*!|>%@`]|[-?:]( |$))/))
+      print "INVALID_VALUE\037`" k ":` is not valid YAML unquoted; wrap the value in quotes"
+  }
+  if (rval["status"] == "abandoned") exit
+  for (x = 1; x <= nh; x++) { hd = need[x]; if (!(hd in have)) print "MISSING_SECTION\037no `" hd "` section" }
+  for (x = 1; x <= nl; x++) if (!hasl[x]) print "MISSING_SECTION\037no filled-in `" lab[x] "` line"
+  for (x = 1; x <= np; x++) { hd = ph[x]; if (hd in have) { print "UNFILLED_PLACEHOLDER\037still contains template text: " hd; break } }
+}'
+
+check_record() { # template record-file record-number prefix
+  local code msg rp
+  rp="$(rel_path "$2")"
+  while IFS=$'\x1f' read -r code msg; do
+    report record "${code}" "${rp}" "${msg}"
+  done < <(awk -v num="$3" -v prefix="$4" "${RECORD_AWK}" "$1" "$2")
 }
 
 for tdir in "${TEMPLATES_DIR}"/*/; do
   folder="$(basename "${tdir}")"
   fdir="${DOCS_DIR}/${folder}"
   [ -d "${fdir}" ] || continue
-  layout="$(layout_of "${folder}")"
-  if [ "${layout}" = "unknown" ]; then
-    report scaffold UNKNOWN_LAYOUT "docs/${folder}/" "doctor-docs.sh has no record layout for this folder; update layout_of()"
+  # One template per record type; its `id: <PREFIX>NNNN` names the record prefix.
+  tmpl="$(find "${tdir}" -maxdepth 1 -type f -name '*.template.md' | sort | head -n 1)"
+  prefix=""
+  if [ -n "${tmpl}" ]; then
+    tid="$(fm_value "${tmpl}" id)"
+    case "${tid}" in [A-Z]*-NNNN) prefix="${tid%NNNN}" ;; esac
+  fi
+  if [ -z "${prefix}" ]; then
+    report scaffold UNKNOWN_PREFIX "docs/${folder}/" "the plugin template for this folder has no \`id: <PREFIX>-NNNN\` front-matter line"
     continue
   fi
-  main_part="${layout#dir }"
-  parts="$(find "${tdir}" -maxdepth 1 -type f -name '*.template.md' -exec basename {} \; | sort | sed 's/\.template\.md$/.md/')"
+  re_numbered="^${prefix}[0-9]{4}-"
+  re_kebab="^${prefix}[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\$"
   records="" numbers=""
 
   for entry in "${fdir}"/* "${fdir}"/.[!.]*; do
@@ -253,48 +303,38 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
     rp="$(rel_path "${entry}")"
     case "${name}" in README.md|*.template.md) continue ;; esac
     is_os_junk "${name}" && continue
-    if [ "${layout}" = "file" ] && [ -f "${entry}" ] && [ "${name%.md}" = "${name}" ] \
-      && printf '%s' "${name}" | grep -qE '^[0-9]{4}-'; then
-      report record BAD_NAME "${rp}" "records are NNNN-slug.md files"
-      continue
-    fi
     stem="${name%.md}"
-    if ! printf '%s' "${stem}" | grep -qE '^[0-9]{4}-'; then
-      report stray UNNUMBERED "${rp}" "not a NNNN-slug record; adopt it as one or move it out of docs/${folder}/"
+    if [[ ! ${stem} =~ ${re_numbered} ]]; then
+      if [[ -d ${entry} && ${stem} =~ ^[0-9]{4}- ]]; then
+        # Pre-0.3.0 layout: ADRs, specs, and plans were NNNN-slug/ directories.
+        report record WRONG_LAYOUT "${rp}/" "old directory layout; merge its parts into one ${prefix}NNNN-slug.md"
+      elif [[ ${stem} =~ ^([A-Za-z]+-)?[0-9]{4}- ]]; then
+        # A numbered record under a pre-0.3.0 bare name, another prefix, or another case.
+        report record BAD_NAME "${rp}" "records here are named ${prefix}NNNN-slug.md"
+      else
+        report stray UNNUMBERED "${rp}" "not a ${prefix}NNNN-slug record; adopt it as one or move it out of docs/${folder}/"
+      fi
       continue
     fi
-    printf '%s' "${stem}" | grep -qE '^[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*$' \
+    if [ -d "${entry}" ] || [ "${name}" = "${stem}" ]; then
+      report record WRONG_LAYOUT "${rp}" "records are single ${prefix}NNNN-slug.md files"
+      continue
+    fi
+    [[ ${stem} =~ ${re_kebab} ]] \
       || report record BAD_NAME "${rp}" "slug must be kebab-case (lowercase letters, digits, hyphens)"
-    words="$(printf '%s' "${stem#????-}" | awk -F- '{print NF}')"
+    bare="${stem#"${prefix}"}"
+    dashes="${bare#????-}"; dashes="${dashes//[!-]/}"
+    words=$(( ${#dashes} + 1 ))
     [ "${words}" -le 4 ] \
       || report record SLUG_TOO_LONG "${rp}" "slug has ${words} words (at most 4)"
-    num="${stem%%-*}"
+    num="${bare%%-*}"
     numbers="${numbers}${num}"$'\n'
     records="${records}${stem}"$'\n'
-    if [ "${layout}" = "file" ]; then
-      # a directory is a promoted record — allowed, parts are free-form
-      [ -f "${entry}" ] && check_part "${tdir}${parts%.md}.template.md" "${entry}" "${num}"
-    elif [ -f "${entry}" ]; then
-      report record WRONG_LAYOUT "${rp}" "records here are NNNN-slug/ directories with: $(printf '%s' "${parts}" | tr '\n' ' ')"
-    else
-      while IFS= read -r p; do
-        if [ -f "${entry}/${p}" ]; then
-          check_part "${tdir}${p%.md}.template.md" "${entry}/${p}" "${num}"
-        else
-          report record MISSING_PART "${rp}/" "no ${p}"
-        fi
-      done <<< "${parts}"
-      for f in "${entry}"/* "${entry}"/.[!.]*; do
-        [ -e "${f}" ] || continue
-        is_os_junk "$(basename "${f}")" && continue
-        printf '%s\n' "${parts}" | grep -qxF "$(basename "${f}")" \
-          || report record EXTRA_PART "$(rel_path "${f}")" "not a part file of this record type ($(printf '%s' "${parts}" | tr '\n' ' '))"
-      done
-    fi
+    check_record "${tmpl}" "${entry}" "${num}" "${prefix}"
   done
 
   while IFS= read -r dup; do
-    [ -n "${dup}" ] && report record DUP_NUMBER "docs/${folder}/${dup}-*" "number used by more than one record"
+    [ -n "${dup}" ] && report record DUP_NUMBER "docs/${folder}/${prefix}${dup}-*" "number used by more than one record"
   done < <(printf '%s' "${numbers}" | sort | uniq -d)
 
   # Index lines: format comes from the template README's `**Index line:**` spec.
@@ -318,7 +358,7 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
     if [ "${len}" -gt 120 ]; then
       report record LINE_TOO_LONG "${loc}" "index line for ${stem} is ${len} characters (at most 120)"
     fi
-    if ! printf '%s' "${stem}" | grep -qE '^[0-9]{4}-' || [ "${count}" -lt "${n_fields}" ]; then
+    if ! printf '%s' "${stem}" | grep -qE "^${prefix}[0-9]{4}-" || [ "${count}" -lt "${n_fields}" ]; then
       report record INDEX_FORMAT "${loc}" "expected \`- ${fmt}\`: ${line}"
       continue
     fi
@@ -336,14 +376,9 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
     printf '%s' "${idate}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
       || report record INDEX_FORMAT "${loc}" "${stem}: '${idate}' is not a YYYY-MM-DD date"
     if [ "${date_pos}" -eq 3 ]; then
-      key="$(printf '%s' "${value_field}" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')"
-      if [ "${layout}" = "file" ]; then src="${fdir}/${stem}.md"; else src="${fdir}/${stem}/${main_part}"; fi
-      ivalue="${f2}"
-      if [ -f "${src}" ]; then
-        rvalue="$(sed -n "s/^- ${key}: *//p" "${src}" | head -n 1)"
-        [ -z "${rvalue}" ] || [ "${ivalue}" = "${rvalue}" ] \
-          || report record INDEX_MISMATCH "${loc}" "${stem}: index says ${value_field} '${ivalue}', record says '${rvalue}'"
-      fi
+      rvalue="$(fm_value "${fdir}/${stem}.md" "${value_field}")"
+      [ -z "${rvalue}" ] || [ "${f2}" = "${rvalue}" ] \
+        || report record INDEX_MISMATCH "${loc}" "${stem}: index says ${value_field} '${f2}', record says '${rvalue}'"
     fi
   done < <(sed -n '/^## Index$/,$p' "${readme}")
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Automated version of the manual verification steps in CLAUDE.md ("Testing
-# changes"). Run locally from anywhere inside the repository, and in CI by
+# Repository checks (see CLAUDE.md, "Tests").
+# Run locally from anywhere inside the repository, and in CI by
 # .github/workflows/ci.yml. Runs every check and exits non-zero if any failed.
 set -uo pipefail
 
@@ -172,8 +172,8 @@ else
   fail "stop hook nudged a non-framework docs/ folder: ${stop_out}"
 fi
 
-# Without CLAUDE_PLUGIN_ROOT the hook must self-locate (the manual-testing path
-# documented in CLAUDE.md); run_stop covers the env-provided production path.
+# Without CLAUDE_PLUGIN_ROOT the hook must self-locate (the path
+# for manual runs); run_stop covers the env-provided production path.
 stop_out="$(printf '{"session_id": "%s", "stop_hook_active": false}' "${sid}-noenv" \
   | TMPDIR="${TMP_ROOT}" CLAUDE_PROJECT_DIR="${target}" \
     bash "${PLUGIN_DIR}/hooks-handlers/stop.sh")" \
@@ -187,8 +187,7 @@ fi
 # --- 5. This repo's docs/ carries the templates/docs scaffold ----------------
 # Per CLAUDE.md: every *.template.md matches byte-for-byte; folder README.md
 # prose matches, but docs/ indexes may ADD record index lines; the only extra
-# files allowed under docs/ are numbered records (NNNN-slug entries and their
-# part files).
+# files allowed under docs/ are numbered records (PREFIX-NNNN-slug.md files).
 note "docs/ scaffold matches templates/docs"
 failures_before=${failures}
 # shellcheck source=../plugins/stella-agentic-workflow-docs/scripts/lib/template-files.sh
@@ -216,7 +215,8 @@ while IFS= read -r rel; do
       # (diff exits 1 on any difference, so under pipefail its output is
       # captured and tested rather than used as a pipeline exit status.)
       readme_diff="$(diff -u "${tmpl}" "${inst}" || true)"
-      removed="$(printf '%s' "${readme_diff}" | grep '^-' | grep -v '^--- ' || true)"
+      # The index placeholder goes once the first index line is added.
+      removed="$(printf '%s' "${readme_diff}" | grep '^-' | grep -v '^--- ' | grep -vE '^-_No .* yet\._$' || true)"
       if [ -n "${removed}" ]; then
         fail "README prose diverged from template (only added index lines are allowed): docs/${rel}"
       fi
@@ -240,8 +240,9 @@ done < <(template_files "${TEMPLATES_DIR}")
 
 while IFS= read -r rel; do
   if [ ! -f "${TEMPLATES_DIR}/${rel}" ]; then
-    case "/${rel}" in
-      */[0-9][0-9][0-9][0-9]-*) : ;; # numbered record entry — expected
+    case "${rel}" in
+      */*/*) fail "unexpected nested file under docs/ (records are single files): docs/${rel}" ;;
+      */[A-Z]*-[0-9][0-9][0-9][0-9]-*.md) : ;; # numbered record file — expected
       *)
         fail "unexpected non-record file under docs/: docs/${rel}"
         ;;
@@ -260,7 +261,7 @@ bash "${PLUGIN_DIR}/scripts/init-docs.sh" "${fresh}" >/dev/null
 if bash "${DOCTOR}" "${fresh}" >/dev/null; then
   echo "ok: a fresh bootstrap conforms"
 else
-  fail "doctor reports findings on a fresh bootstrap (a template folder without a layout in layout_of()?)"
+  fail "doctor reports findings on a fresh bootstrap (a template without an \`id: <PREFIX>-NNNN\` line?)"
 fi
 if bash "${DOCTOR}" "${REPO_ROOT}" >/dev/null; then
   echo "ok: this repository's docs/ conforms"
@@ -270,13 +271,17 @@ fi
 
 drift="${TMP_ROOT}/doctor-drift"
 cp -R "${fresh}" "${drift}"
-index_line="- 0001-add-cache — done — 2026-01-01 — Cache responses"
-mkdir -p "${drift}/docs/plans/0001-add-cache"
-sed 's/^- Status: .*/- Status: done/; s/^- Date: .*/- Date: 2026-01-01/; s/^# NNNN — .*/# 0001 — Add cache/' \
-  "${TEMPLATES_DIR}/plans/plan.template.md" | grep -v '^<' > "${drift}/docs/plans/0001-add-cache/plan.md"
+# fill_record <template> <out> <sed-expr>: a record built from its template,
+# every <placeholder> line filled, then the given front-matter edits applied.
+fill_record() {
+  sed 's/^<.*/Filled./; s/: <.*/: filled/; s/YYYY-MM-DD/2026-01-01/g' "$1" | sed "$3" > "$2"
+}
+index_line="- PLAN-0001-add-cache — done — 2026-01-01 — Cache responses"
+fill_record "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/PLAN-0001-add-cache.md" \
+  's/^id: .*/id: PLAN-0001/; s/^status: proposed/status: done/'
 sed -i.bak "s/^_No plans yet\._\$/${index_line}/; s/^Plans produced/Plans (old wording) produced/" \
   "${drift}/docs/plans/README.md" && rm "${drift}/docs/plans/README.md.bak"
-echo "stale" >> "${drift}/docs/adrs/decision.template.md"
+echo "stale" >> "${drift}/docs/adrs/adr.template.md"
 echo "# old" > "${drift}/docs/plans/problem.template.md"
 rm "${drift}/docs/specs/README.md"
 echo "# 0001 — Wrong layout" > "${drift}/docs/memories/0001-wrong-layout.txt"
@@ -289,7 +294,7 @@ for code in README_DRIFT TEMPLATE_DRIFT OBSOLETE_TEMPLATE MISSING BAD_NAME; do
   esac
 done
 case "${doctor_out}" in
-  *0001-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+  *PLAN-0001-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
 esac
 
 bash "${DOCTOR}" --fix "${drift}" >/dev/null
@@ -301,44 +306,78 @@ else
   fail "--fix did not refresh docs/plans/README.md prose while keeping its index line"
 fi
 if [ ! -e "${drift}/docs/plans/problem.template.md" ] && [ -f "${drift}/docs/specs/README.md" ] \
-  && cmp -s "${TEMPLATES_DIR}/adrs/decision.template.md" "${drift}/docs/adrs/decision.template.md"; then
+  && cmp -s "${TEMPLATES_DIR}/adrs/adr.template.md" "${drift}/docs/adrs/adr.template.md"; then
   echo "ok: --fix repairs missing, drifted, and obsolete scaffold files"
 else
   fail "--fix did not repair the scaffold"
 fi
-# OS metadata files are never findings; --fix never deletes a *.template.md
-# inside a record or in a folder the plugin does not own; index-line length
-# counts characters, not bytes, whatever the locale.
-touch "${drift}/docs/.DS_Store" "${drift}/docs/plans/0001-add-cache/.DS_Store"
+# OS metadata files are never findings; --fix never deletes a *.template.md in
+# a folder the plugin does not own; index-line length counts characters, not
+# bytes, whatever the locale.
+touch "${drift}/docs/.DS_Store" "${drift}/docs/plans/.DS_Store"
 mkdir -p "${drift}/docs/guides"
 echo "# team template" > "${drift}/docs/guides/runbook.template.md"
-cp "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/0001-add-cache/plan.template.md"
-mkdir -p "${drift}/docs/plans/0003-long-summary"
-printf '# 0003 — Long summary\n\n- Status: abandoned\n- Spec: none\n- ADRs: none\n- Date: 2026-01-03\n' \
-  > "${drift}/docs/plans/0003-long-summary/plan.md"
+printf -- '---\nid: PLAN-0003\nstatus: abandoned\ndate: 2026-01-03\nspec: none\nadrs: none\nsummary: Long\n---\n' \
+  > "${drift}/docs/plans/PLAN-0003-long-summary.md"
 # exactly 120 characters (126 bytes: each em dash is three)
-long_line="- 0003-long-summary — abandoned — 2026-01-03 — $(printf 'x%.0s' $(seq 1 73))"
+long_line="- PLAN-0003-long-summary — abandoned — 2026-01-03 — $(printf 'x%.0s' $(seq 1 68))"
 echo "${long_line}" >> "${drift}/docs/plans/README.md"
 doctor_out="$(LC_ALL=C bash "${DOCTOR}" --fix "${drift}")"
 case "${doctor_out}" in
   *.DS_Store*|*LINE_TOO_LONG*) fail "doctor flagged OS metadata or a <=120-char index line: ${doctor_out}" ;;
 esac
-if [ -f "${drift}/docs/guides/runbook.template.md" ] && [ -f "${drift}/docs/plans/0001-add-cache/plan.template.md" ]; then
+if [ -f "${drift}/docs/guides/runbook.template.md" ]; then
   echo "ok: --fix leaves templates outside the scaffold locations alone"
 else
   fail "--fix deleted a *.template.md outside the plugin's scaffold locations"
 fi
-rm -r "${drift}/docs/guides" "${drift}/docs/plans/0001-add-cache/plan.template.md"
+rm -r "${drift}/docs/guides"
 # An abandoned record may be a pointer stub without the template's sections.
-mkdir -p "${drift}/docs/plans/0002-old-pointer"
-printf '# 0002 — Old pointer\n\n- Status: abandoned\n- Spec: none\n- ADRs: none\n- Date: 2026-01-02\n\nMoved to spec 0001-x.\n' \
-  > "${drift}/docs/plans/0002-old-pointer/plan.md"
-echo "- 0002-old-pointer — abandoned — 2026-01-02 — Moved to spec 0001-x" >> "${drift}/docs/plans/README.md"
+printf -- '---\nid: PLAN-0002\nstatus: abandoned\ndate: 2026-01-02\nspec: none\nadrs: none\nsummary: Moved to SPEC-0001-x\n---\nMoved to SPEC-0001-x.\n' \
+  > "${drift}/docs/plans/PLAN-0002-old-pointer.md"
+echo "- PLAN-0002-old-pointer — abandoned — 2026-01-02 — Moved to SPEC-0001-x" >> "${drift}/docs/plans/README.md"
 rm "${drift}/docs/memories/0001-wrong-layout.txt"
+# Every folder's records are prefixed single files checked by their front
+# matter; the pre-0.3.0 directory layout and unprefixed names are findings.
+adrs="${drift}/docs/adrs"
+fill_record "${TEMPLATES_DIR}/adrs/adr.template.md" "${adrs}/ADR-0001-use-x.md" \
+  's/^id: .*/id: ADR-0001/; s/^status: proposed/status: accepted/'
+sed -i.bak 's/^_No ADRs yet\._$/- ADR-0001-use-x — accepted — 2026-01-01 — Use X/' "${adrs}/README.md" \
+  && rm "${adrs}/README.md.bak"
+fill_record "${TEMPLATES_DIR}/memories/memory.template.md" "${drift}/docs/memories/MEM-0001-a-fact.md" \
+  's/^id: .*/id: MEM-0001/'
+echo "- MEM-0001-a-fact — environment — 2026-01-01 — A fact" >> "${drift}/docs/memories/README.md"
+sed -i.bak '/^_No memories yet\._$/d' "${drift}/docs/memories/README.md" && rm "${drift}/docs/memories/README.md.bak"
+sed 's/^id: .*/id: ADR-0002/; s/^status: .*/status: bogus/; /^summary:/d' "${adrs}/ADR-0001-use-x.md" \
+  > "${adrs}/ADR-0002-bad-one.md"
+mkdir -p "${adrs}/0003-old-layout" && echo "# 0003 — Old" > "${adrs}/0003-old-layout/decision.md"
+echo "# 0004 — Bare" > "${adrs}/0004-bare.md"
+# Unfilled `Binds:` line, a value that is not valid YAML unquoted, a wrong-case
+# prefix, and front matter that never closes.
+sed 's/^id: .*/id: ADR-0005/; s/^Binds: .*/Binds: <what future work must respect>/; s/^summary: .*/summary: Use X: it is fast/' \
+  "${adrs}/ADR-0001-use-x.md" > "${adrs}/ADR-0005-raw-binds.md"
+cp "${adrs}/ADR-0001-use-x.md" "${adrs}/adr-0006-lower-case.md"
+{ echo "---"; sed 's/^id: .*/id: ADR-0007/; /^---$/d' "${adrs}/ADR-0001-use-x.md"; } > "${adrs}/ADR-0007-unclosed.md"
+doctor_out="$(bash "${DOCTOR}" "${drift}")"
+for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004-bare.md" \
+  "INVALID_VALUE docs/adrs/ADR-0002-bad-one.md — status" "MISSING_FIELD docs/adrs/ADR-0002-bad-one.md" \
+  "UNFILLED_PLACEHOLDER docs/adrs/ADR-0005-raw-binds.md — still contains template text: Binds:" \
+  "INVALID_VALUE docs/adrs/ADR-0005-raw-binds.md — \`summary:\`" "BAD_NAME docs/adrs/adr-0006-lower-case.md" \
+  "MISSING_FRONT_MATTER docs/adrs/ADR-0007-unclosed.md"; do
+  case "${doctor_out}" in
+    *"] ${expect}"*) echo "ok: doctor reports ${expect}" ;;
+    *) fail "doctor did not report ${expect}: ${doctor_out}" ;;
+  esac
+done
+case "${doctor_out}" in
+  *ADR-0001-use-x*|*MEM-0001-a-fact*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+esac
+rm -r "${adrs}/ADR-0002-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-bare.md" \
+  "${adrs}/ADR-0005-raw-binds.md" "${adrs}/adr-0006-lower-case.md" "${adrs}/ADR-0007-unclosed.md"
 if LC_ALL=C bash "${DOCTOR}" "${drift}" >/dev/null; then
-  echo "ok: tree conforms once the record finding is resolved (abandoned pointer stub allowed)"
+  echo "ok: tree conforms once the record findings are resolved (abandoned pointer stub allowed)"
 else
-  fail "doctor still reports findings after --fix and the record fix: $(bash "${DOCTOR}" "${drift}")"
+  fail "doctor still reports findings after --fix and the record fixes: $(bash "${DOCTOR}" "${drift}")"
 fi
 
 # --- 6. Injected context stays within its word budget ------------------------

@@ -159,9 +159,10 @@ and bootstraps the convention; your repository owns the data.
 | `docs/memories/` | Durable facts not derivable from code or git history | Whenever a session learns something a future session would otherwise rediscover |
 | `docs/learnings/` | Failed approaches, corrections, gotchas, post-mortems | Whenever something didn't work as expected |
 
-Records are numbered per folder (`0001-slug`, `0002-slug`, …) and listed in that folder's
-`README.md` index. The full conventions — part files, templates, index-line format — are
-documented in the folder `README.md`s bootstrapped into your repository, and in the
+Records are single files, prefixed and numbered per folder (`ADR-0001-slug.md`,
+`PLAN-0002-slug.md`, …), each starting with YAML front matter and listed in that folder's
+`README.md` index. The full conventions — naming, front matter, templates, index-line format —
+are documented in the folder `README.md`s bootstrapped into your repository, and in the
 [plugin README](plugins/stella-agentic-workflow-docs/README.md).
 
 ## Developing the framework

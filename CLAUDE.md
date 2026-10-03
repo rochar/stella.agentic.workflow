@@ -1,78 +1,43 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Purpose
+# Agentic Workflow
 
 `stella.agentic.workflow` is a common framework for managing agentic workflows across
-repositories: documentation structure, architectural decisions, memories, plugins, hooks, and
-workflow state, so AI agents behave consistently across sessions and across projects.
+repositories (documentation structure, decisions, memories, plugins, hooks, workflow state), so
+AI agents behave consistently across sessions and projects.
 
-Two consequences of that goal shape most decisions here:
+- **Other repos consume this one.** Prefer relative paths and self-describing files over
+  absolute paths or host-specific assumptions.
+- **The artifacts are the interface.** The layout and conventions of the files are what must
+  stay stable.
 
-- **This repo is consumed by other repos.** Anything added should be usable from a project that
-  vendors, submodules, or installs this framework — prefer relative paths and self-describing
-  files over absolute paths or host-specific assumptions.
-- **The artifacts are the interface.** The framework's value is in the layout and conventions of
-  its files, so those conventions are the thing to keep stable.
+## How to Behave
 
-## Layout
+1. When a step doesn't need my input, keep going. Put status notes in the same message as your next action.
+Stop and ask only when you can't continue without me, or before anything destructive: deleting data, force-pushing, or changing anything outside this repository.
 
-- `.claude-plugin/marketplace.json` — this repo is a Claude Code plugin marketplace
-  (`stella-agentic`); `.claude/settings.json` registers it and enables the docs plugin here.
-- `plugins/stella-agentic-workflow-docs/` — the docs-structure plugin: hooks (`hooks/hooks.json`
-  with a SessionStart handler `hooks-handlers/session-start.sh` and a Stop handler
-  `hooks-handlers/stop.sh`), injected context (`context/docs-structure.md`), bootstrap
-  (`scripts/init-docs.sh` copying `templates/docs/`), a structural checker
-  (`scripts/doctor-docs.sh`, deriving its checks from `templates/docs/`), and the `docs-init`
-  (bootstrap), `docs-doctor` (conformance and migration), and `docs-gc` (gardening) skills.
-  Details in its `README.md`.
-- `docs/` — this repo's own instance of the structure (adrs, specs, plans, memories, learnings).
+2. Once you have answered something, treat that answer as done. Focus on what I'm asking now, and don't go back over an earlier answer unless I ask about it or point out a problem with it.
 
-Naming constraint: Claude Code requires kebab-case plugin and marketplace names (no dots), so
-the plugin is `stella-agentic-workflow-docs` and the marketplace is `stella-agentic`. How
-downstream repositories install the framework is documented in `README.md`.
+## Project Structure
 
-## Conventions to preserve
+- `.claude-plugin/marketplace.json` — the `stella-agentic` plugin marketplace, listing every
+  plugin under `plugins/`; `.claude/settings.json` enables them in this repo. Plugin and
+  marketplace names must be kebab-case (no dots); the dotted form goes in `displayName`.
+- `plugins/<name>/` — one plugin each; read its `README.md` before changing it.
+  - `stella-agentic-workflow-docs` — the `docs/` structure: hooks, injected context, the
+    `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc` skills.
+- `docs/` — this repo's own instance of that structure.
 
-- `scripts/init-docs.sh` must stay idempotent and must never overwrite existing files. The
-  bootstrapped content lives in `templates/docs/` (the script only copies it); edit the
-  templates, not the script.
-- This repo's own `docs/` tree carries the same scaffold as `templates/docs/`: the folder
-  `README.md` prose and every `*.template.md` must match byte-for-byte, so change both
-  together. Records written here (`NNNN-slug` entries and their index lines) live in `docs/`
-  only and are never copied back into `templates/docs/`.
-- Each `docs/*/README.md` is the index of its folder; any change to a folder's contents
-  updates its index in the same change.
-- The SessionStart hook communicates by printing to stdout; whatever it prints is added to the
-  session context. `context/docs-structure.md` is paid for in every session of every consuming
-  repo: keep it a thin pointer. The folder `README.md`s are the source of truth for record
-  conventions (naming, part files, templates, index-line format) and are loaded lazily —
-  detail goes there, never back into the injected context.
+## Conventions
 
-## Testing changes
+- `templates/docs/` is the scaffold's source of truth; `init-docs.sh` only copies it,
+  idempotently and without overwriting. Edit the templates, not the script.
+- This repo's `docs/` scaffold (folder `README.md` prose and every `*.template.md`) must match
+  `templates/docs/` byte-for-byte, so change both together. Records (`<PREFIX>-NNNN-slug.md`
+  and their index lines) live only in `docs/`.
+- `context/docs-structure.md` is injected into every session of every consuming repo: keep it a
+  thin pointer. Record conventions belong in the folder `README.md`s.
 
-There is no build or test suite. `bash scripts/checks.sh` runs every check below in one go,
-plus `shellcheck` on all shell scripts (skipped locally when shellcheck is not installed).
-CI (`.github/workflows/ci.yml`) runs the same script on pushes to `main` and on pull
-requests. The individual manual steps, if you need to run one in isolation:
+## Tests
 
-- `bash plugins/stella-agentic-workflow-docs/scripts/init-docs.sh <dir>` (run twice; the second
-  run must report nothing to do)
-- `CLAUDE_PROJECT_DIR=<dir> CLAUDE_PLUGIN_ROOT=$PWD/plugins/stella-agentic-workflow-docs bash
-  plugins/stella-agentic-workflow-docs/hooks-handlers/session-start.sh` (with and without a
-  bootstrapped `<dir>/docs`)
-- `echo '{"stop_hook_active": false}' | CLAUDE_PROJECT_DIR=<dir> bash
-  plugins/stella-agentic-workflow-docs/hooks-handlers/stop.sh` (must emit a block decision only
-  when `<dir>/docs` is fully bootstrapped; with `"stop_hook_active": true`, or with a
-  `"session_id"` whose session was already nudged, it must print nothing)
-- `bash plugins/stella-agentic-workflow-docs/scripts/doctor-docs.sh <dir>` (exit 0 on a fresh
-  bootstrap and on this repo; `--fix` repairs scaffold drift but never touches records)
-- validate every JSON file parses (e.g. `jq empty <file>`)
-- `diff -r docs plugins/stella-agentic-workflow-docs/templates/docs` (the scaffold must match:
-  no differences in any `*.template.md` or in README prose. Once this repo records ADRs, plans,
-  memories, or learnings of its own, the only expected differences are those record files and
-  their index lines under `docs/`)
-- `wc -w plugins/stella-agentic-workflow-docs/context/docs-structure.md` (must stay within the
-  word budget set in `scripts/checks.sh` — the file is injected into every session of every
-  consuming repo)
+`bash scripts/checks.sh` runs every check (JSON validity, shellcheck, bootstrap idempotency,
+hook behaviour, doctor, scaffold diff, context word budget). CI runs it on pushes to `main` and
+on pull requests.

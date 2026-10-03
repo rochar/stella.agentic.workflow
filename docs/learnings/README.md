@@ -15,22 +15,24 @@ knowing next time — but only if every rule below holds:
 
 **Obsolescence:** a learning records something that happened, so it is never re-verified — but
 its lesson can stop applying (the gotcha is fixed upstream, or a guard now prevents the mistake
-structurally). When that happens, mark the record obsolete in place: add
-`- Obsolete: YYYY-MM-DD — <why it no longer applies>` under the date line and keep the rest as
-history. Its index line stays, suffixed `— obsolete`, so numbers are never reused and references
+structurally). When that happens, mark the record obsolete in place: set its front matter's
+`obsolete: YYYY-MM-DD — <why it no longer applies>` and keep the rest as history. Its index line stays, suffixed `— obsolete`, so numbers are never reused and references
 by number stay valid. Obsolete learnings are history, not guidance — skip them when skimming the
 index.
 
-**Naming:** single files `NNNN-slug.md` (zero-padded per-folder sequence; kebab-case slug, at
-most 4 words — e.g. `0005-hook-stdout-buffering.md`). Take the next number from the index below
-(first record: `0001`). If a learning ever needs splitting, promote it to a directory with the
-same `NNNN-slug` stem; references by number stay valid.
+**Naming:** each learning is one file `LRN-NNNN-slug.md` (zero-padded per-folder sequence;
+kebab-case slug, at most 4 words — e.g. `LRN-0005-hook-stdout-buffering.md`). Take the next
+number from the index below (first record: `LRN-0001`). A lesson that outgrows one file is
+split into new numbered records.
+
+**Reading:** the front matter's `summary` states the lesson; skip records with `obsolete:` set;
+open the body for what happened.
 
 **Template:** copy [`learning.template.md`](./learning.template.md) from this folder — lead
 with the lesson, keep the story under it. Template files are not records — never list them in
 the index.
 
-**Index line:** `- NNNN-slug — YYYY-MM-DD — one-line summary` — keep the whole line at most
+**Index line:** `- LRN-NNNN-slug — YYYY-MM-DD — one-line summary` — keep the whole line at most
 120 characters.
 
 ## Index

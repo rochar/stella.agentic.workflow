@@ -9,8 +9,8 @@ situations lead here, and the same pass handles all of them:
 
 - **Adding the plugin** to a repository that already keeps decisions, plans, or notes in its
   own way — that knowledge should end up as proper records, not beside them.
-- **Updating the plugin** — the scaffold changed (new folders, new template fields, a part
-  file moved to another record type) and existing records follow the old shape.
+- **Updating the plugin** — the scaffold changed (new folders, new template fields, a new
+  record layout or naming) and existing records follow the old shape.
 - **Drift** — sessions wrote records without following the conventions.
 
 This is a structural pass. Content gardening — stale memories, obsolete learnings, merging
@@ -32,7 +32,7 @@ content outside the structure — plus `README_MERGE` when the root `docs/README
 additions the script could not merge (merge them by hand into the new template).
 
 Then read every folder `README.md` (now current). They are the source of truth for naming,
-part files, statuses, split rules, and index-line formats; where they and this skill
+front matter, statuses, split rules, and index-line formats; where they and this skill
 disagree, they win. Also read the template of each record type you are about to write.
 
 ## 2. Reconcile records
@@ -42,34 +42,53 @@ record's own content, other records, the code, or `git log` — and nothing a re
 lost. Where no evidence exists, do not invent it: write `Not recorded.` in a required section
 the content cannot fill, and list the gap in the report.
 
-- **Content in the wrong place** (`EXTRA_PART`, `MISSING_PART`, `MISSING_SECTION`, or a
-  record mixing what a split rule separates). Move content to where the folder README now
-  puts it; restructure it under the template's headings. Moves, never deletions. Typical
-  upgrade case: a plan with a `problem.md` from an older layout — the what/why and
-  requirements become a new spec (next spec number; status `implemented` if the plan is
-  `done`, `abandoned` if it was abandoned, otherwise `draft`), root cause and alternatives
-  go to the plan's `## Approach`, and the plan's `Spec:` line names the new spec.
+- **Content in the wrong place** (`MISSING_SECTION`, or a record mixing what a split rule
+  separates). Move content to where the folder README now puts it; restructure it under the
+  template's headings. Moves, never deletions. Typical upgrade cases from the pre-0.3.0
+  layout (`WRONG_LAYOUT` on a `NNNN-slug/` directory):
+  - an ADR directory → one `ADR-NNNN-slug.md`: status and date from `decision.md` into front
+    matter (a `superseded by NNNN` status becomes `status: superseded` plus
+    `superseded-by: ADR-NNNN`); `problem.md` context and options into `## Context`, options
+    one line each; `decision.md` decision into `## Decision` and its consequences into the
+    `Binds:` line. `log.md`: move each reason it records (why a status changed, what an
+    amendment changed) into `## Context`, one line each; only then remove it — git history
+    keeps its earlier states.
+  - a spec or plan directory → its `spec.md` / `plan.md` becomes `SPEC-` / `PLAN-NNNN-slug.md`.
+    A plan's old `problem.md`: the what/why and requirements become a new spec (next spec
+    number; status `implemented` if the plan is `done`, `abandoned` if it was abandoned,
+    otherwise `draft`), root cause and alternatives go to the plan's `## Approach`, and the
+    plan's `spec:` field names the new spec.
+  - a memory or learning directory (a record promoted to a directory before 0.3.0) → one
+    `MEM-` / `LRN-NNNN-slug.md` keeping the number for its first fact or lesson; each further
+    fact or lesson becomes a new numbered record.
 - **A record that belongs in another folder** (e.g. a plan record that only ever held a
   problem statement, or a memory that is really a learning). Re-create it in the right folder
   under that folder's next number. Keep the original as a pointer so its number is never
   reused and references stay valid, retired by its own folder's rule: plans and specs
-  → a stub keeping the title and metadata lines, status `abandoned`, and one line saying where
+  → a stub keeping the front matter, status `abandoned`, and one line saying where
   the content now lives (no template sections — the checker does not require them for
   `abandoned` records, so do not pad them with `Not recorded.`); memories →
-  deleted file, index line suffixed `— deleted`; learnings → `Obsolete:` line pointing at the
+  deleted file, index line suffixed `— deleted`; learnings → `obsolete:` field pointing at the
   new record. ADRs are never retired this way — flag instead.
-- **Layout and naming** (`WRONG_LAYOUT`, `BAD_NAME`, `SLUG_TOO_LONG`, `BAD_TITLE`). Keep the
-  number; convert the layout (`git mv` so history follows), shorten or kebab-case the slug,
-  fix the title line. Then search the repository for references to the old path or stem and
+- **Layout and naming** (`WRONG_LAYOUT`, `BAD_NAME`, `SLUG_TOO_LONG`, `MISSING_FRONT_MATTER`). Keep the
+  number; convert the layout (`git mv` so history follows), add the folder prefix, shorten or
+  kebab-case the slug,
+  convert a title and `- Key:` metadata lines into front matter. Then search the repository for
+  references to the old path or stem (bare `NNNN-slug` included) and
   update them.
 - **Duplicate numbers** (`DUP_NUMBER`). The record created later (by `git log`) takes the
   folder's next free number; update its index line and any references.
 - **Metadata** (`MISSING_FIELD`, `INVALID_VALUE`). Normalize values that clearly map to the
   vocabulary (`Accepted` → `accepted`, `owner` → `ownership`). Fill missing fields from
-  evidence: `Date:` from the record or the file's first commit; a missing memory `Verified:`
-  takes the `Date:` value (the last known confirmation — never today's date unless you
-  actually verified the fact); a plan's `Spec:` / `ADRs:` name the records it clearly
-  implements or relies on, else `none`. A value with no clear mapping: flag it.
+  evidence: `date:` from the record or the file's first commit; a missing memory `verified:`
+  takes the `date:` value (the last known confirmation — never today's date unless you
+  actually verified the fact); a plan's `spec:` / `adrs:` name the records it clearly
+  implements or relies on, else `none`; a missing `summary:` is the record's gist in one line,
+  taken from its body; `id:` is the prefix and number from the file name; an ADR's `scope:`
+  names the paths or areas its decision text covers (`all` only when the text says so — an
+  unclear scope is flagged, not guessed). A value that is not valid YAML unquoted (it contains
+  `: ` or starts with a character such as `` ` `` or `[`) gets quotes. A value with no clear
+  mapping: flag it.
 - **Indexes** (`UNINDEXED`, `ORPHAN_INDEX`, `INDEX_MISMATCH`, `INDEX_FORMAT`, `DUP_INDEX`,
   `LINE_TOO_LONG`). Every record gets exactly one index line in the folder's format, ordered
   by number, at most 120 characters. For a mismatch the record body wins unless `git log`
@@ -96,7 +115,7 @@ qualification rules:
 - **It fits a record type** → write it as record(s) of the type(s) its content actually is —
   one record per thing the source records, not one per template that could relate to it. Do
   not create a record the source cannot fill: a plan with no stated requirements does not
-  need a spec made up for it (its `Spec:` line is simply `none`), and a record whose required
+  need a spec made up for it (its `spec:` field is simply `none`), and a record whose required
   sections would mostly read `Not recorded.` is a sign it should not exist. Keep every fact and
   its original date (from the text or `git log`), status mapped to the vocabulary, numbered in
   the original's chronological order. One file may become several records (a gotchas list is

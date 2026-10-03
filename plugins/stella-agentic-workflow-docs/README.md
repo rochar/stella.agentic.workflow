@@ -47,11 +47,11 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
    is for adding the plugin to a repository with existing docs, for plugin updates, and for
    records written without following the structure. It runs
    [scripts/doctor-docs.sh](scripts/doctor-docs.sh), which derives its checks from
-   [templates/docs/](templates/docs/) (scaffold files, part files, template fields, sections
+   [templates/docs/](templates/docs/) (scaffold files, front-matter fields, sections
    and vocabularies, index-line formats) and with `--fix` repairs the scaffold — creating
    missing files, restoring drifted templates, refreshing folder README prose while keeping
    index lines, and removing templates the plugin no longer ships. The skill then migrates
-   records to the current layout (e.g. a plan's old `problem.md` into a spec), adopts
+   records to the current layout (e.g. an old ADR directory into one `ADR-NNNN-slug.md`), adopts
    decisions, plans, and lessons kept elsewhere as records, and fixes index lines — moving
    content, never dropping it, and never inventing what no evidence supports. Stray
    documentation that is not a record is left alone. It never commits. The script alone
@@ -68,39 +68,36 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 
 ## Document types
 
-- **adrs/** — any record of architectural or design decisions; anything important for new and
-  existing features. Written at decision time. Layout: directory `NNNN-slug/` with `problem.md`,
-  `decision.md`, `log.md`.
-- **specs/** — specifications of what to build and why: objective, scope, requirements,
-  acceptance criteria. Layout: directory `NNNN-slug/` with `spec.md`.
-- **plans/** — plans produced by agents, skills, or workflows: how something will be built
-  (approach, checkbox steps, verification), naming the spec it implements, if any. Layout:
-  directory `NNNN-slug/` with `plan.md`.
-- **memories/** — durable facts not derivable from code or git history, added whenever a session
-  learns something a future session would otherwise rediscover. Each memory declares a type and
-  carries a `Verified:` date updated whenever the fact is confirmed to still hold; the type
-  vocabulary and qualification rules live in `memories/README.md`. Files: `NNNN-slug.md`.
-- **learnings/** — lessons learned (failed approaches, corrections, gotchas, post-mortems),
-  added when something didn't work as expected and the qualification rules in
-  `learnings/README.md` hold. Files: `NNNN-slug.md`.
+Every record is one file `<PREFIX>-NNNN-slug.md` starting with YAML front matter.
 
-Records are identified by a zero-padded per-folder sequence number (starting at `0001`) plus a
-kebab-case slug of at most 4 words (noun-phrase for ADRs and specs, verb-phrase for plans);
-dates live in each folder's `README.md` index line, not in filenames. The index-line format is
-defined in each folder's `README.md` (ADR, spec, and plan index lines carry a status, memory
-index lines carry a type). Statuses have defined vocabularies and reading rules — only accepted
-ADRs bind; implemented specs and done or abandoned plans are history — documented in the
-folder `README.md`s. Splitting ADRs into fixed-name part files lets agents load only the part
-they need (e.g. `decision.md` without the growing `log.md`).
+- **adrs/** (`ADR-`) — architectural or design decisions; anything important for new and
+  existing features. Written at decision time. Body: `## Context` and `## Decision`.
+- **specs/** (`SPEC-`) — what to build and why: objective, scope, requirements, acceptance
+  criteria.
+- **plans/** (`PLAN-`) — how something will be built (approach, checkbox steps, verification),
+  naming the spec it implements and the ADRs it relies on, if any.
+- **memories/** (`MEM-`) — durable facts not derivable from code or git history. Each declares
+  a type and carries a `verified:` date updated whenever the fact is confirmed to still hold;
+  the type vocabulary and qualification rules live in `memories/README.md`.
+- **learnings/** (`LRN-`) — lessons learned (failed approaches, corrections, gotchas,
+  post-mortems), added when the qualification rules in `learnings/README.md` hold.
+
+Records are identified by their prefix, a zero-padded per-folder sequence number (starting at
+`0001`), and a kebab-case slug of at most 4 words (noun-phrase for ADRs and specs, verb-phrase
+for plans) — e.g. `ADR-0012-use-postgres.md`. The front matter holds the id, status or type,
+dates, and a one-line `summary`, so an agent can judge a record without reading its body. The
+index-line format is defined in each folder's `README.md` (ADR, spec, and plan index lines
+carry a status, memory index lines carry a type). Statuses have defined vocabularies and
+reading rules — only accepted ADRs bind; implemented specs and done or abandoned plans are
+history — documented in the folder `README.md`s.
 
 The templates define the shape of each record, not a workflow: nothing requires a spec before
 a plan, or a plan for every spec. How records are produced — spec-first gates, human approval,
 task breakdown — is left to the skills and workflows that use the structure.
 
-The contents of each document are defined by standalone `<part>.template.md` files that live in
-the folder they apply to (bootstrapped together with the tree): `problem`/`decision`/`log` for
-ADRs, `spec` for specs, `plan` for plans, and one template each for memories and learnings. Every
-document starts as a copy of its template; template files are not records and are never indexed.
+Each record type is defined by one `<type>.template.md` in its folder (bootstrapped together
+with the tree): `adr`, `spec`, `plan`, `memory`, `learning`. Every record starts as a copy of
+its template; template files are not records and are never indexed.
 
 ## Installation
 

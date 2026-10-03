@@ -20,22 +20,25 @@ to rediscover — but only if every rule below holds:
 `external-system` (behavior of systems this repository talks to), `domain-rule` (business or
 domain constraints), `ownership` (who owns or decides what).
 
-**Staleness:** every memory carries a `Verified:` date — the last time the fact was confirmed
-true. When a session relies on a memory and confirms it still holds, update `Verified:` in the
+**Staleness:** every memory carries a `verified:` date — the last time the fact was confirmed
+true. When a session relies on a memory and confirms it still holds, update `verified:` in the
 file. A memory found to be wrong is corrected in place; a memory no longer relevant is deleted,
 but its index line stays, suffixed `— deleted`, so numbers are never reused and references by
 number stay valid. If the correction itself is a lesson, record that in `learnings/`. The older
-the `Verified:` date, the less a memory should be trusted without re-checking.
+the `verified:` date, the less a memory should be trusted without re-checking.
 
-**Naming:** single files `NNNN-slug.md` (zero-padded per-folder sequence; kebab-case slug, at
-most 4 words — e.g. `0003-staging-db-quirk.md`). Take the next number from the index below
-(first record: `0001`). If a memory ever needs splitting, promote it to a directory with the
-same `NNNN-slug` stem; references by number stay valid.
+**Naming:** each memory is one file `MEM-NNNN-slug.md` (zero-padded per-folder sequence;
+kebab-case slug, at most 4 words — e.g. `MEM-0003-staging-db-quirk.md`). Take the next number
+from the index below (first record: `MEM-0001`). A fact that outgrows one file is split into
+new numbered records.
+
+**Reading:** the front matter's `summary` states the fact; open the body for detail and how to
+verify it.
 
 **Template:** copy [`memory.template.md`](./memory.template.md) from this folder. Template
 files are not records — never list them in the index.
 
-**Index line:** `- NNNN-slug — type — YYYY-MM-DD — one-line summary` — keep the whole line
+**Index line:** `- MEM-NNNN-slug — type — YYYY-MM-DD — one-line summary` — keep the whole line
 at most 120 characters.
 
 ## Index

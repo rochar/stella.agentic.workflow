@@ -11,6 +11,6 @@ corrections). Each folder's `README.md` is the index of its contents.
 2. When your work produces a decision, spec, plan, durable fact, or lesson, record it in the
    matching folder and update that folder's index in the same change.
 3. Before writing or editing any record, read that folder's `README.md` — it defines naming,
-   part files, templates, and the index-line format.
-4. Load lazily: answer "is there a decision or plan about X?" from the index line alone, and
-   open a record's parts shallow-to-deep — the folder `README.md` says which part holds what.
+   front matter, templates, and the index-line format.
+4. Load lazily: answer "is there a decision or plan about X?" from the index line alone; a
+   record's front matter (`status`, `summary`) comes next; open its body only when needed.

@@ -33,9 +33,9 @@ its index line together.
 ## 1. Memories — staleness
 
 - For each memory whose `## Verify` section describes a safe, read-only check (inspect a file,
-  run a command with no side effects), run it. Confirmed → update `Verified:` to today. Wrong →
+  run a command with no side effects), run it. Confirmed → update `verified:` to today. Wrong →
   correct the fact in place; if the correction is itself a lesson, record it in `learnings/`.
-- A memory that cannot be checked safely: report it with its `Verified:` age; do not guess.
+- A memory that cannot be checked safely: report it with its `verified:` age; do not guess.
 - A memory no longer relevant at all: delete the file, keep its index line suffixed
   `— deleted`.
 
@@ -44,7 +44,7 @@ its index line together.
 - A learning is never re-verified (it records a past event), but its lesson can stop applying —
   the gotcha fixed upstream, or a guard now prevents the mistake structurally. When the repo
   shows such evidence, mark the record obsolete in place as the folder README's Obsolescence
-  rule defines (a dated `Obsolete:` line under the date line, story kept as history) and suffix
+  rule defines (a dated `obsolete:` front-matter value, story kept as history) and suffix
   its index line `— obsolete`.
 - No clear evidence → report the suspicion, change nothing.
 
@@ -52,15 +52,16 @@ its index line together.
 
 - Near-duplicate memories or learnings: merge the content into the older record, then retire
   the newer one per its folder's rule (memories: delete + `— deleted`; learnings: obsolete
-  with a why that points at the kept record, e.g. `merged into 0003-…`).
+  with a why that points at the kept record, e.g. `merged into LRN-0003-…`).
 
 ## 4. ADRs, specs, and plans — status hygiene
 
 - A spec whose acceptance criteria demonstrably hold (or whose work was dropped) but is still
-  marked `draft`/`approved`: update the status in `spec.md` and its index line.
+  marked `draft`/`approved`: update the front-matter `status` and the index line.
 - A plan whose work is demonstrably finished or abandoned (check git history) but still marked
-  `proposed`/`in-progress`: update the status in `plan.md` and its index line.
-- ADR statuses change only with evidence, recorded as a dated line in the record's `log.md`.
+  `proposed`/`in-progress`: update the front-matter `status` and the index line.
+- ADR statuses change only with evidence (front-matter `status`, and `superseded-by` when
+  superseded).
   Superseding an ADR requires writing a new one — out of scope here; report it instead.
 - Never delete or rewrite ADR, spec, or plan records; they are kept history even when dead.
 
@@ -69,8 +70,8 @@ its index line together.
 - Tighten one-line summaries in indexes, keep memories to one self-contained fact (split a
   record that grew a second fact into a new numbered record), make learnings lead with the
   lesson. Simplify wording only — never change what a record means.
-- Enforce each folder's split rule: status history or rationale in `decision.md` is moved to
-  the part the folder README assigns it to — move, never delete. A spec carrying design or
+- Enforce each folder's split rule: rationale or rejected options in an ADR's `## Decision` move to
+  its `## Context` — move, never delete. A spec carrying design or
   steps, or a plan carrying requirements, spans two records: flag it in the report instead.
 
 ## Boundaries
