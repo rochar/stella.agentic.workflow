@@ -52,7 +52,7 @@ its index line together.
 
 - Near-duplicate memories or learnings: merge the content into the older record, then retire
   the newer one per its folder's rule (memories: delete + `— deleted`; learnings: obsolete
-  with a why that points at the kept record, e.g. `merged into LRN-0003-…`).
+  with a why that points at the kept record, e.g. `merged into LRN-YYYYMMDD-slug`).
 
 ## 4. ADRs, specs, and plans — status hygiene
 
