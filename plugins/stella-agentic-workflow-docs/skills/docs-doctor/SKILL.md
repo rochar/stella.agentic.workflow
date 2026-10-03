@@ -45,66 +45,74 @@ the content cannot fill, and list the gap in the report.
 - **Content in the wrong place** (`MISSING_SECTION`, or a record mixing what a split rule
   separates). Move content to where the folder README now puts it; restructure it under the
   template's headings. Moves, never deletions. Typical upgrade cases from the pre-0.3.0
-  layout (`WRONG_LAYOUT` on a `NNNN-slug/` directory):
-  - an ADR directory → one `ADR-NNNN-slug.md`: status and date from `decision.md` into front
-    matter (a `superseded by NNNN` status becomes `status: superseded` plus
-    `superseded-by: ADR-NNNN`); `problem.md` context and options into `## Context`, options
-    one line each; `decision.md` decision into `## Decision` and its consequences into the
+  layout (`WRONG_LAYOUT` on a `NNNN-slug/` directory), each named by its `date:` as the
+  `NUMBERED_ID` bullet below describes:
+  - an ADR directory → one `ADR-YYYYMMDD-slug.md`: status and date from `decision.md` into
+    front matter (a `superseded by NNNN` status becomes `status: superseded` plus
+    `superseded-by:` that ADR's new id); `problem.md` context and options into `## Context`,
+    options one line each; `decision.md` decision into `## Decision` and its consequences into the
     `Binds:` line. `log.md`: move each reason it records (why a status changed, what an
     amendment changed) into `## Context`, one line each; only then remove it — git history
     keeps its earlier states.
-  - a spec or plan directory → its `spec.md` / `plan.md` becomes `SPEC-` / `PLAN-NNNN-slug.md`.
-    A plan's old `problem.md`: the what/why and requirements become a new spec (next spec
-    number; status `implemented` if the plan is `done`, `abandoned` if it was abandoned,
+  - a spec or plan directory → its `spec.md` / `plan.md` becomes `SPEC-` /
+    `PLAN-YYYYMMDD-slug.md`. A plan's old `problem.md`: the what/why and requirements become
+    a new spec (dated like the plan; status `implemented` if the plan is `done`, `abandoned` if it was abandoned,
     otherwise `draft`), root cause and alternatives go to the plan's `## Approach`, and the
     plan's `spec:` field names the new spec.
   - a memory or learning directory (a record promoted to a directory before 0.3.0) → one
-    `MEM-` / `LRN-NNNN-slug.md` keeping the number for its first fact or lesson; each further
-    fact or lesson becomes a new numbered record.
+    `MEM-` / `LRN-YYYYMMDD-slug.md` for its first fact or lesson; each further fact or lesson
+    becomes a new record with its own slug.
 - **A record that belongs in another folder** (e.g. a plan record that only ever held a
   problem statement, or a memory that is really a learning). Re-create it in the right folder
-  under that folder's next number. Keep the original as a pointer so its number is never
-  reused and references stay valid, retired by its own folder's rule: plans and specs
+  under that folder's prefix, keeping its date and slug. Keep the original as a pointer so its
+  id is never reused and references stay valid, retired by its own folder's rule: plans and specs
   → a stub keeping the front matter, status `abandoned`, and one line saying where
   the content now lives (no template sections — the checker does not require them for
   `abandoned` records, so do not pad them with `Not recorded.`); memories →
   deleted file, index line suffixed `— deleted`; learnings → `obsolete:` field pointing at the
   new record. ADRs are never retired this way — flag instead.
-- **Layout and naming** (`WRONG_LAYOUT`, `BAD_NAME`, `SLUG_TOO_LONG`, `MISSING_FRONT_MATTER`). Keep the
-  number; convert the layout (`git mv` so history follows), add the folder prefix, shorten or
-  kebab-case the slug,
-  convert a title and `- Key:` metadata lines into front matter. Then search the repository for
-  references to the old path or stem (bare `NNNN-slug` included) and
-  update them.
-- **Duplicate numbers** (`DUP_NUMBER`). The record created later (by `git log`) takes the
-  folder's next free number; update its index line and any references.
+- **Sequence-numbered records** (`NUMBERED_ID`, the pre-0.4.0 `<PREFIX>-NNNN-slug.md`
+  naming). `git mv` the file to `<PREFIX>-YYYYMMDD-slug.md`, the date taken from its `date:`
+  (else the file's first commit), and set `id:` to the new stem. If two records would get the
+  same name, give the later one (by `git log`) a more specific slug. Then rewrite every
+  reference to the old stem or bare `<PREFIX>-NNNN` across the repository — `superseded-by:`,
+  `spec:`, `adrs:`, index lines, and prose — and drop the date column from its index line. A
+  deleted memory survives only as its `— deleted` index line: rename the stem there using
+  that line's own date column, then drop the column.
+- **Layout and naming** (`WRONG_LAYOUT`, `BAD_NAME`, `SLUG_TOO_LONG`, `MISSING_FRONT_MATTER`).
+  Convert the layout (`git mv` so history follows), name the file by its date as above, add the
+  folder prefix, shorten or kebab-case the slug, convert a title and `- Key:` metadata lines
+  into front matter. Then search the repository for references to the old path or stem (bare
+  `NNNN-slug` included) and update them.
 - **Metadata** (`MISSING_FIELD`, `INVALID_VALUE`). Normalize values that clearly map to the
   vocabulary (`Accepted` → `accepted`, `owner` → `ownership`). Fill missing fields from
   evidence: `date:` from the record or the file's first commit; a missing memory `verified:`
   takes the `date:` value (the last known confirmation — never today's date unless you
   actually verified the fact); a plan's `spec:` / `adrs:` name the records it clearly
   implements or relies on, else `none`; a missing `summary:` is the record's gist in one line,
-  taken from its body; `id:` is the prefix and number from the file name; an ADR's `scope:`
+  taken from its body; `id:` is the file stem; a `date:` that differs from the date in the
+  file name is corrected to the name's date — the name is the id and is never re-dated —
+  unless evidence shows the name's date is the wrong one (then flag it); an ADR's `scope:`
   names the paths or areas its decision text covers (`all` only when the text says so — an
   unclear scope is flagged, not guessed). A value that is not valid YAML unquoted (it contains
   `: ` or starts with a character such as `` ` `` or `[`) gets quotes. A value with no clear
   mapping: flag it.
 - **Indexes** (`UNINDEXED`, `ORPHAN_INDEX`, `INDEX_MISMATCH`, `INDEX_FORMAT`, `DUP_INDEX`,
   `LINE_TOO_LONG`). Every record gets exactly one index line in the folder's format, ordered
-  by number, at most 120 characters. For a mismatch the record body wins unless `git log`
+  by id, at most 120 characters. For a mismatch the record body wins unless `git log`
   shows the index line was the later, deliberate change. For an orphan line, look for the
   record in `git log` (renamed → fix the line; a deleted memory → suffix `— deleted`); if
-  nothing explains it, leave the line and flag it — the number stays taken either way.
+  nothing explains it, leave the line and flag it — the id stays taken either way.
 - **`UNFILLED_PLACEHOLDER`**: remove optional sections that were never filled; fill required
   ones from evidence or `Not recorded.`.
 
-Never renumber a record except to resolve a duplicate, never reuse a number, and never delete
-an ADR, spec, or plan.
+Never re-date or rename a record except to migrate it to the current naming, never reuse an
+id, and never delete an ADR, spec, or plan.
 
 ## 3. Adopt stray content
 
 `[stray]` findings are knowledge outside the structure: files or folders in `docs/` that are
-not part of it (`OUTSIDE_STRUCTURE`), unnumbered files inside a record folder (`UNNUMBERED`),
+not part of it (`OUTSIDE_STRUCTURE`), undated files inside a record folder (`UNDATED`),
 and likely candidates elsewhere in the repository (`CANDIDATE`, a name-based guess — also
 look for decision logs, plans, or gotcha lists the heuristic missed, such as sections of a
 top-level `NOTES.md`).
@@ -117,8 +125,8 @@ qualification rules:
   not create a record the source cannot fill: a plan with no stated requirements does not
   need a spec made up for it (its `spec:` field is simply `none`), and a record whose required
   sections would mostly read `Not recorded.` is a sign it should not exist. Keep every fact and
-  its original date (from the text or `git log`), status mapped to the vocabulary, numbered in
-  the original's chronological order. One file may become several records (a gotchas list is
+  its original date (from the text or `git log`), status mapped to the vocabulary, and named by
+  that original date. One file may become several records (a gotchas list is
   often a learning plus a memory); content that fails a folder's qualification rules does not
   become a record — say so in the report. When a file maps 1:1 onto a record, `git mv` it
   first and then restructure, so history follows; when it is split, delete it only after all

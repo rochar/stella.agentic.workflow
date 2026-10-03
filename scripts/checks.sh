@@ -187,7 +187,7 @@ fi
 # --- 5. This repo's docs/ carries the templates/docs scaffold ----------------
 # Per CLAUDE.md: every *.template.md matches byte-for-byte; folder README.md
 # prose matches, but docs/ indexes may ADD record index lines; the only extra
-# files allowed under docs/ are numbered records (PREFIX-NNNN-slug.md files).
+# files allowed under docs/ are dated records (PREFIX-YYYYMMDD-slug.md files).
 note "docs/ scaffold matches templates/docs"
 failures_before=${failures}
 # shellcheck source=../plugins/stella-agentic-workflow-docs/scripts/lib/template-files.sh
@@ -242,7 +242,7 @@ while IFS= read -r rel; do
   if [ ! -f "${TEMPLATES_DIR}/${rel}" ]; then
     case "${rel}" in
       */*/*) fail "unexpected nested file under docs/ (records are single files): docs/${rel}" ;;
-      */[A-Z]*-[0-9][0-9][0-9][0-9]-*.md) : ;; # numbered record file — expected
+      */[A-Z]*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.md) : ;; # dated record file — expected
       *)
         fail "unexpected non-record file under docs/: docs/${rel}"
         ;;
@@ -261,7 +261,7 @@ bash "${PLUGIN_DIR}/scripts/init-docs.sh" "${fresh}" >/dev/null
 if bash "${DOCTOR}" "${fresh}" >/dev/null; then
   echo "ok: a fresh bootstrap conforms"
 else
-  fail "doctor reports findings on a fresh bootstrap (a template without an \`id: <PREFIX>-NNNN\` line?)"
+  fail "doctor reports findings on a fresh bootstrap (a template without an \`id: <PREFIX>-YYYYMMDD-slug\` line?)"
 fi
 if bash "${DOCTOR}" "${REPO_ROOT}" >/dev/null; then
   echo "ok: this repository's docs/ conforms"
@@ -276,9 +276,9 @@ cp -R "${fresh}" "${drift}"
 fill_record() {
   sed 's/^<.*/Filled./; s/: <.*/: filled/; s/YYYY-MM-DD/2026-01-01/g' "$1" | sed "$3" > "$2"
 }
-index_line="- PLAN-0001-add-cache — done — 2026-01-01 — Cache responses"
-fill_record "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/PLAN-0001-add-cache.md" \
-  's/^id: .*/id: PLAN-0001/; s/^status: proposed/status: done/'
+index_line="- PLAN-20260101-add-cache — done — Cache responses"
+fill_record "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/PLAN-20260101-add-cache.md" \
+  's/^id: .*/id: PLAN-20260101-add-cache/; s/^status: proposed/status: done/; s/^spec: .*/spec: none/; s/^adrs: .*/adrs: ADR-20260101-use-x, ADR-20260102-other/'
 sed -i.bak "s/^_No plans yet\._\$/${index_line}/; s/^Plans produced/Plans (old wording) produced/" \
   "${drift}/docs/plans/README.md" && rm "${drift}/docs/plans/README.md.bak"
 echo "stale" >> "${drift}/docs/adrs/adr.template.md"
@@ -294,7 +294,7 @@ for code in README_DRIFT TEMPLATE_DRIFT OBSOLETE_TEMPLATE MISSING BAD_NAME; do
   esac
 done
 case "${doctor_out}" in
-  *PLAN-0001-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+  *PLAN-20260101-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
 esac
 
 bash "${DOCTOR}" --fix "${drift}" >/dev/null
@@ -317,10 +317,10 @@ fi
 touch "${drift}/docs/.DS_Store" "${drift}/docs/plans/.DS_Store"
 mkdir -p "${drift}/docs/guides"
 echo "# team template" > "${drift}/docs/guides/runbook.template.md"
-printf -- '---\nid: PLAN-0003\nstatus: abandoned\ndate: 2026-01-03\nspec: none\nadrs: none\nsummary: Long\n---\n' \
-  > "${drift}/docs/plans/PLAN-0003-long-summary.md"
+printf -- '---\nid: PLAN-20260103-long-summary\nstatus: abandoned\ndate: 2026-01-03\nspec: none\nadrs: none\nsummary: Long\n---\n' \
+  > "${drift}/docs/plans/PLAN-20260103-long-summary.md"
 # exactly 120 characters (126 bytes: each em dash is three)
-long_line="- PLAN-0003-long-summary — abandoned — 2026-01-03 — $(printf 'x%.0s' $(seq 1 68))"
+long_line="- PLAN-20260103-long-summary — abandoned — $(printf 'x%.0s' $(seq 1 77))"
 echo "${long_line}" >> "${drift}/docs/plans/README.md"
 doctor_out="$(LC_ALL=C bash "${DOCTOR}" --fix "${drift}")"
 case "${doctor_out}" in
@@ -333,47 +333,85 @@ else
 fi
 rm -r "${drift}/docs/guides"
 # An abandoned record may be a pointer stub without the template's sections.
-printf -- '---\nid: PLAN-0002\nstatus: abandoned\ndate: 2026-01-02\nspec: none\nadrs: none\nsummary: Moved to SPEC-0001-x\n---\nMoved to SPEC-0001-x.\n' \
-  > "${drift}/docs/plans/PLAN-0002-old-pointer.md"
-echo "- PLAN-0002-old-pointer — abandoned — 2026-01-02 — Moved to SPEC-0001-x" >> "${drift}/docs/plans/README.md"
+printf -- '---\nid: PLAN-20260102-old-pointer\nstatus: abandoned\ndate: 2026-01-02\nspec: none\nadrs: none\nsummary: Moved to SPEC-20260101-x\n---\nMoved to SPEC-20260101-x.\n' \
+  > "${drift}/docs/plans/PLAN-20260102-old-pointer.md"
+echo "- PLAN-20260102-old-pointer — abandoned — Moved to SPEC-20260101-x" >> "${drift}/docs/plans/README.md"
 rm "${drift}/docs/memories/0001-wrong-layout.txt"
 # Every folder's records are prefixed single files checked by their front
 # matter; the pre-0.3.0 directory layout and unprefixed names are findings.
 adrs="${drift}/docs/adrs"
-fill_record "${TEMPLATES_DIR}/adrs/adr.template.md" "${adrs}/ADR-0001-use-x.md" \
-  's/^id: .*/id: ADR-0001/; s/^status: proposed/status: accepted/'
-sed -i.bak 's/^_No ADRs yet\._$/- ADR-0001-use-x — accepted — 2026-01-01 — Use X/' "${adrs}/README.md" \
+fill_record "${TEMPLATES_DIR}/adrs/adr.template.md" "${adrs}/ADR-20260101-use-x.md" \
+  's/^id: .*/id: ADR-20260101-use-x/; s/^status: proposed/status: accepted/'
+sed -i.bak 's/^_No ADRs yet\._$/- ADR-20260101-use-x — accepted — Use X/' "${adrs}/README.md" \
   && rm "${adrs}/README.md.bak"
-fill_record "${TEMPLATES_DIR}/memories/memory.template.md" "${drift}/docs/memories/MEM-0001-a-fact.md" \
-  's/^id: .*/id: MEM-0001/'
-echo "- MEM-0001-a-fact — environment — 2026-01-01 — A fact" >> "${drift}/docs/memories/README.md"
+fill_record "${TEMPLATES_DIR}/memories/memory.template.md" "${drift}/docs/memories/MEM-20260101-a-fact.md" \
+  's/^id: .*/id: MEM-20260101-a-fact/'
+echo "- MEM-20260101-a-fact — environment — A fact" >> "${drift}/docs/memories/README.md"
 sed -i.bak '/^_No memories yet\._$/d' "${drift}/docs/memories/README.md" && rm "${drift}/docs/memories/README.md.bak"
-sed 's/^id: .*/id: ADR-0002/; s/^status: .*/status: bogus/; /^summary:/d' "${adrs}/ADR-0001-use-x.md" \
-  > "${adrs}/ADR-0002-bad-one.md"
+sed 's/^id: .*/id: ADR-20260101-bad-one/; s/^status: .*/status: bogus/; /^summary:/d' "${adrs}/ADR-20260101-use-x.md" \
+  > "${adrs}/ADR-20260101-bad-one.md"
 mkdir -p "${adrs}/0003-old-layout" && echo "# 0003 — Old" > "${adrs}/0003-old-layout/decision.md"
 echo "# 0004 — Bare" > "${adrs}/0004-bare.md"
 # Unfilled `Binds:` line, a value that is not valid YAML unquoted, a wrong-case
 # prefix, and front matter that never closes.
-sed 's/^id: .*/id: ADR-0005/; s/^Binds: .*/Binds: <what future work must respect>/; s/^summary: .*/summary: Use X: it is fast/' \
-  "${adrs}/ADR-0001-use-x.md" > "${adrs}/ADR-0005-raw-binds.md"
-cp "${adrs}/ADR-0001-use-x.md" "${adrs}/adr-0006-lower-case.md"
-{ echo "---"; sed 's/^id: .*/id: ADR-0007/; /^---$/d' "${adrs}/ADR-0001-use-x.md"; } > "${adrs}/ADR-0007-unclosed.md"
+sed 's/^id: .*/id: ADR-20260101-raw-binds/; s/^Binds: .*/Binds: <what future work must respect>/; s/^summary: .*/summary: Use X: it is fast/' \
+  "${adrs}/ADR-20260101-use-x.md" > "${adrs}/ADR-20260101-raw-binds.md"
+cp "${adrs}/ADR-20260101-use-x.md" "${adrs}/adr-20260101-lower-case.md"
+{ echo "---"; sed 's/^id: .*/id: ADR-20260101-unclosed/; /^---$/d' "${adrs}/ADR-20260101-use-x.md"; } > "${adrs}/ADR-20260101-unclosed.md"
+# Dated naming: a pre-0.4.0 sequence-numbered record and its old-format index
+# line, an id that is not the file stem, a date: that differs from the name, an
+# impossible date, and a superseded-by that is not a dated id.
+sed 's/^id: .*/id: ADR-0008/' "${adrs}/ADR-20260101-use-x.md" > "${adrs}/ADR-0008-legacy.md"
+echo "- ADR-0008-legacy — accepted — 2026-01-01 — Legacy" >> "${adrs}/README.md"
+sed 's/^id: .*/id: ADR-20260101-other/' "${adrs}/ADR-20260101-use-x.md" > "${adrs}/ADR-20260101-wrong-id.md"
+sed 's/^id: .*/id: ADR-20260202-wrong-date/' "${adrs}/ADR-20260101-use-x.md" > "${adrs}/ADR-20260202-wrong-date.md"
+sed 's/^id: .*/id: ADR-20261301-bad-month/; s/^date: .*/date: 2026-13-01/' "${adrs}/ADR-20260101-use-x.md" \
+  > "${adrs}/ADR-20261301-bad-month.md"
+sed 's/^id: .*/id: ADR-20260101-old-ref/; s/^status: .*/status: superseded/; s/^superseded-by:.*/superseded-by: ADR-0001/' \
+  "${adrs}/ADR-20260101-use-x.md" > "${adrs}/ADR-20260101-old-ref.md"
+# A date with nine digits, a calendar date that does not exist, a plan still
+# referencing a sequence-numbered spec, and an index line that kept its old
+# date column after the record was renamed.
+cp "${adrs}/ADR-20260101-use-x.md" "${adrs}/ADR-202601011-typo.md"
+sed 's/^id: .*/id: ADR-20260231-feb-thirty/; s/^date: .*/date: 2026-02-31/' "${adrs}/ADR-20260101-use-x.md" \
+  > "${adrs}/ADR-20260231-feb-thirty.md"
+sed 's/^id: .*/id: PLAN-20260101-old-refs/; s/^spec: .*/spec: SPEC-0001-old/' \
+  "${drift}/docs/plans/PLAN-20260101-add-cache.md" > "${drift}/docs/plans/PLAN-20260101-old-refs.md"
+fill_record "${TEMPLATES_DIR}/learnings/learning.template.md" "${drift}/docs/learnings/LRN-20260101-a-lesson.md" \
+  's/^id: .*/id: LRN-20260101-a-lesson/'
+sed -i.bak 's/^_No learnings yet\._$/- LRN-20260101-a-lesson — 2026-01-01 — A lesson/' "${drift}/docs/learnings/README.md" \
+  && rm "${drift}/docs/learnings/README.md.bak"
 doctor_out="$(bash "${DOCTOR}" "${drift}")"
 for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004-bare.md" \
-  "INVALID_VALUE docs/adrs/ADR-0002-bad-one.md — status" "MISSING_FIELD docs/adrs/ADR-0002-bad-one.md" \
-  "UNFILLED_PLACEHOLDER docs/adrs/ADR-0005-raw-binds.md — still contains template text: Binds:" \
-  "INVALID_VALUE docs/adrs/ADR-0005-raw-binds.md — \`summary:\`" "BAD_NAME docs/adrs/adr-0006-lower-case.md" \
-  "MISSING_FRONT_MATTER docs/adrs/ADR-0007-unclosed.md"; do
+  "INVALID_VALUE docs/adrs/ADR-20260101-bad-one.md — status" "MISSING_FIELD docs/adrs/ADR-20260101-bad-one.md" \
+  "UNFILLED_PLACEHOLDER docs/adrs/ADR-20260101-raw-binds.md — still contains template text: Binds:" \
+  "INVALID_VALUE docs/adrs/ADR-20260101-raw-binds.md — \`summary:\`" "BAD_NAME docs/adrs/adr-20260101-lower-case.md" \
+  "MISSING_FRONT_MATTER docs/adrs/ADR-20260101-unclosed.md" "NUMBERED_ID docs/adrs/ADR-0008-legacy.md" \
+  "INDEX_FORMAT docs/adrs/README.md — expected \`- ADR-YYYYMMDD-slug — status — one-line summary\`: - ADR-0008-legacy" \
+  "INVALID_VALUE docs/adrs/ADR-20260101-wrong-id.md — id 'ADR-20260101-other' must be the file stem" \
+  "INVALID_VALUE docs/adrs/ADR-20260202-wrong-date.md — date '2026-01-01' does not match" \
+  "BAD_NAME docs/adrs/ADR-20261301-bad-month.md — '20261301' in the name is not a YYYYMMDD date" \
+  "INVALID_VALUE docs/adrs/ADR-20260101-old-ref.md — status superseded needs" \
+  "BAD_NAME docs/adrs/ADR-202601011-typo.md" \
+  "BAD_NAME docs/adrs/ADR-20260231-feb-thirty.md — '20260231' in the name is not a YYYYMMDD date" \
+  "INVALID_VALUE docs/plans/PLAN-20260101-old-refs.md — spec 'SPEC-0001-old' is not a SPEC-YYYYMMDD-slug id" \
+  "INDEX_FORMAT docs/learnings/README.md — LRN-20260101-a-lesson: drop the old date column"; do
   case "${doctor_out}" in
     *"] ${expect}"*) echo "ok: doctor reports ${expect}" ;;
     *) fail "doctor did not report ${expect}: ${doctor_out}" ;;
   esac
 done
 case "${doctor_out}" in
-  *ADR-0001-use-x*|*MEM-0001-a-fact*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+  *ADR-20260101-use-x*|*MEM-20260101-a-fact*|*PLAN-20260101-add-cache*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
 esac
-rm -r "${adrs}/ADR-0002-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-bare.md" \
-  "${adrs}/ADR-0005-raw-binds.md" "${adrs}/adr-0006-lower-case.md" "${adrs}/ADR-0007-unclosed.md"
+rm -r "${adrs}/ADR-20260101-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-bare.md" \
+  "${adrs}/ADR-20260101-raw-binds.md" "${adrs}/adr-20260101-lower-case.md" "${adrs}/ADR-20260101-unclosed.md" \
+  "${adrs}/ADR-0008-legacy.md" "${adrs}/ADR-20260101-wrong-id.md" "${adrs}/ADR-20260202-wrong-date.md" \
+  "${adrs}/ADR-20261301-bad-month.md" "${adrs}/ADR-20260101-old-ref.md" "${adrs}/ADR-202601011-typo.md" \
+  "${adrs}/ADR-20260231-feb-thirty.md" "${drift}/docs/plans/PLAN-20260101-old-refs.md"
+sed -i.bak '/^- ADR-0008-legacy /d' "${adrs}/README.md" && rm "${adrs}/README.md.bak"
+sed -i.bak 's/^- LRN-20260101-a-lesson — 2026-01-01 — /- LRN-20260101-a-lesson — /' "${drift}/docs/learnings/README.md" \
+  && rm "${drift}/docs/learnings/README.md.bak"
 if LC_ALL=C bash "${DOCTOR}" "${drift}" >/dev/null; then
   echo "ok: tree conforms once the record findings are resolved (abandoned pointer stub allowed)"
 else

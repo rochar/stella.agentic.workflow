@@ -1,5 +1,5 @@
 ---
-id: LRN-NNNN
+id: LRN-YYYYMMDD-slug
 date: YYYY-MM-DD
 obsolete: # YYYY-MM-DD — why it no longer applies; set only when the lesson stops applying
 summary: <the lesson in one line>

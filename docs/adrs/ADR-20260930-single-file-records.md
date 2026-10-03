@@ -1,5 +1,5 @@
 ---
-id: ADR-0001
+id: ADR-20260930-single-file-records
 status: accepted # proposed | accepted | rejected | superseded
 date: 2026-09-30
 superseded-by:
@@ -15,10 +15,11 @@ one line. Rejected: keeping part files (overhead for short records); a log secti
 history already holds earlier states); prefix-only renames (no cheap skim).
 
 ## Decision
-Every record is a single file `<PREFIX>-NNNN-slug.md` with prefixes `ADR`, `SPEC`, `PLAN`,
-`MEM`, `LRN`. Each starts with YAML front matter holding its id, status or type, dates, and a
-one-line `summary`. ADRs have only `## Context` and `## Decision` (ending in a `Binds:` line);
-supersession is recorded in front matter (`status: superseded`, `superseded-by:`).
+Every record is a single file `<PREFIX>-YYYYMMDD-slug.md` (named per
+ADR-20261003-dated-record-ids) with prefixes `ADR`, `SPEC`, `PLAN`, `MEM`, `LRN`. Each starts
+with YAML front matter holding its id, status or type, dates, and a one-line `summary`. ADRs
+have only `## Context` and `## Decision` (ending in a `Binds:` line); supersession is recorded
+in front matter (`status: superseded`, `superseded-by:`).
 
 Binds: templates, folder READMEs, doctor-docs.sh, and skills treat records this way; the
 doctor flags the pre-0.3.0 directory layout and unprefixed names for migration.

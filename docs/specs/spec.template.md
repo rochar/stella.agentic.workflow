@@ -1,5 +1,5 @@
 ---
-id: SPEC-NNNN
+id: SPEC-YYYYMMDD-slug
 status: draft # draft | approved | implemented | abandoned
 type: feature # feature | bug | change
 date: YYYY-MM-DD

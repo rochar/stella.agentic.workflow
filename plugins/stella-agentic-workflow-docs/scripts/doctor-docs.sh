@@ -79,7 +79,7 @@ rebuild_readme() { # template current
   if grep -q '^## Index$' "${cur}"; then
     body="$(sed -n '/^## Index$/,$p' "${cur}" | sed '1d')"
   else
-    body="$(grep -E '^- ([A-Z]+-)?[0-9]{4}-' "${cur}" || true)" # old unprefixed lines too
+    body="$(grep -E '^- ([A-Z]+-)?[0-9]{4}([0-9]{4})?-' "${cur}" || true)" # older formats too
   fi
   body="$(printf '%s\n' "${body}" | grep -vE '^_No .* yet\._$' | sed '/./,$!d' || true)"
   sed '/^## Index$/q' "${tmpl}"
@@ -102,6 +102,23 @@ is_os_junk() { case "$1" in .DS_Store|Thumbs.db|desktop.ini) return 0 ;; esac; r
 # are not UTF-8 continuation bytes (0x80-0xBF). `${#var}` counts bytes under
 # LC_ALL=C, which would count each em dash of an index line as three.
 char_len() { printf '%s' "$1" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '; }
+
+# A real calendar date written as YYYYMMDD (month lengths and leap years included).
+valid_ymd() {
+  local y m d max
+  [[ $1 =~ ^([0-9]{4})(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])$ ]] || return 1
+  y=$((10#${BASH_REMATCH[1]})) m=$((10#${BASH_REMATCH[2]})) d=$((10#${BASH_REMATCH[3]}))
+  case "${m}" in
+    4|6|9|11) max=30 ;;
+    2) if [ $((y % 4)) -eq 0 ] && { [ $((y % 100)) -ne 0 ] || [ $((y % 400)) -eq 0 ]; }; then
+         max=29
+       else
+         max=28
+       fi ;;
+    *) max=31 ;;
+  esac
+  [ "${d}" -le "${max}" ]
+}
 
 # --- 1. Scaffold -------------------------------------------------------------
 if [ ! -d "${DOCS_DIR}" ]; then
@@ -196,8 +213,11 @@ fi
 # template, then the record) and prints one `CODE<US>message` line per finding.
 # Front matter: present and closed; every template key present; a `# a | b`
 # comment is the value vocabulary; YYYY-MM-DD is a date; a <placeholder> needs a
-# real value; any other value with NNNN must name this record (prefix + number);
-# an empty template value is optional, but `superseded-by` is required exactly
+# real value, and one whose placeholder names a <PREFIX>-YYYYMMDD-slug (a plan's
+# `spec:` / `adrs:`) is a comma-separated list of such ids or `none`; a
+# YYYYMMDD-slug value (the `id:`) must be the record's file stem, and a
+# YYYY-MM-DD `date:` must equal the date in its name; an empty template
+# value is optional, but `superseded-by` is required exactly
 # when `status` is superseded; every value must be valid YAML as written.
 # Body: every `## ` section unless its first line is an `<optional...` hint,
 # every `Label: <...>` line (e.g. an ADR's `Binds:`) filled in, and no line left
@@ -240,6 +260,8 @@ END {
     if (t == "") continue # optional
     if (t == "YYYY-MM-DD") {
       if (v !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) print "INVALID_VALUE\037" k " \047" v "\047 is not YYYY-MM-DD"
+      else if (k == "date") { w = v; gsub(/-/, "", w)
+        if (w != ndate) print "INVALID_VALUE\037date \047" v "\047 does not match the date in the file name (" ndate ")" }
     } else if (index(c, " | ")) {
       m = split(c, opt, " [|] "); ok = 0
       for (y = 1; y <= m; y++) if (v == opt[y]) ok = 1
@@ -247,15 +269,25 @@ END {
     } else if (substr(t, 1, 1) == "<") {
       if (v == "") print "MISSING_FIELD\037`" k ":` is empty"
       else if (substr(v, 1, 1) == "<") print "UNFILLED_PLACEHOLDER\037`" k ":` still contains template text"
-    } else if (index(t, "NNNN")) {
-      w = t; sub(/NNNN/, num, w)
-      if (v != w) print "INVALID_VALUE\037" k " \047" v "\047 must be " w
+      else if (match(t, /[A-Z]+-YYYYMMDD-slug/)) {
+        # References: each item `none` or a dated id of the type the placeholder names.
+        rpre = substr(t, RSTART, RLENGTH - 13); m = split(v, ref, ",")
+        for (y = 1; y <= m; y++) {
+          r = ref[y]; gsub(/^[ \t]+|[ \t]+$/, "", r)
+          if (r != "none" && r !~ ("^" rpre "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-z0-9]+(-[a-z0-9]+)*$")) {
+            print "INVALID_VALUE\037" k " \047" r "\047 is not a " rpre "YYYYMMDD-slug id (or none)"; break
+          }
+        }
+      }
+    } else if (index(t, "YYYYMMDD-slug")) {
+      if (v != stem) print "INVALID_VALUE\037" k " \047" v "\047 must be the file stem " stem
     }
   }
   if (hasfm && ("superseded-by" in tval)) {
     v = rval["superseded-by"]
     if (rval["status"] == "superseded") {
-      if (v !~ ("^" prefix "[0-9][0-9][0-9][0-9]$")) print "INVALID_VALUE\037status superseded needs `superseded-by: " prefix "NNNN`"
+      if (v !~ ("^" prefix "[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-z0-9]+(-[a-z0-9]+)*$"))
+        print "INVALID_VALUE\037status superseded needs `superseded-by: " prefix "YYYYMMDD-slug`"
     } else if (v != "") print "INVALID_VALUE\037superseded-by is set but status is not superseded"
   }
   # Unquoted, a value with `: ` or a leading YAML indicator breaks every YAML reader.
@@ -270,32 +302,35 @@ END {
   for (x = 1; x <= np; x++) { hd = ph[x]; if (hd in have) { print "UNFILLED_PLACEHOLDER\037still contains template text: " hd; break } }
 }'
 
-check_record() { # template record-file record-number prefix
+check_record() { # template record-file stem name-date prefix
   local code msg rp
   rp="$(rel_path "$2")"
   while IFS=$'\x1f' read -r code msg; do
     report record "${code}" "${rp}" "${msg}"
-  done < <(awk -v num="$3" -v prefix="$4" "${RECORD_AWK}" "$1" "$2")
+  done < <(awk -v stem="$3" -v ndate="$4" -v prefix="$5" "${RECORD_AWK}" "$1" "$2")
 }
 
 for tdir in "${TEMPLATES_DIR}"/*/; do
   folder="$(basename "${tdir}")"
   fdir="${DOCS_DIR}/${folder}"
   [ -d "${fdir}" ] || continue
-  # One template per record type; its `id: <PREFIX>NNNN` names the record prefix.
+  # One template per record type; its `id: <PREFIX>-YYYYMMDD-slug` names the record prefix.
   tmpl="$(find "${tdir}" -maxdepth 1 -type f -name '*.template.md' | sort | head -n 1)"
   prefix=""
   if [ -n "${tmpl}" ]; then
     tid="$(fm_value "${tmpl}" id)"
-    case "${tid}" in [A-Z]*-NNNN) prefix="${tid%NNNN}" ;; esac
+    case "${tid}" in [A-Z]*-YYYYMMDD-slug) prefix="${tid%YYYYMMDD-slug}" ;; esac
   fi
   if [ -z "${prefix}" ]; then
-    report scaffold UNKNOWN_PREFIX "docs/${folder}/" "the plugin template for this folder has no \`id: <PREFIX>-NNNN\` front-matter line"
+    report scaffold UNKNOWN_PREFIX "docs/${folder}/" "the plugin template for this folder has no \`id: <PREFIX>-YYYYMMDD-slug\` front-matter line"
     continue
   fi
-  re_numbered="^${prefix}[0-9]{4}-"
-  re_kebab="^${prefix}[0-9]{4}-[a-z0-9]+(-[a-z0-9]+)*\$"
-  records="" numbers=""
+  re_dated="^${prefix}[0-9]{8}-"
+  re_kebab="^${prefix}[0-9]{8}-[a-z0-9]+(-[a-z0-9]+)*\$"
+  # An attempted record name: this prefix and any digits (a mistyped date), or
+  # 4+ digits under any or no prefix (a bare, other-prefix, or other-case name).
+  re_misnamed="^${prefix}[0-9]+-|^([A-Za-z]+-)?[0-9]{4,}-"
+  records=""
 
   for entry in "${fdir}"/* "${fdir}"/.[!.]*; do
     [ -e "${entry}" ] || continue
@@ -304,38 +339,39 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
     case "${name}" in README.md|*.template.md) continue ;; esac
     is_os_junk "${name}" && continue
     stem="${name%.md}"
-    if [[ ! ${stem} =~ ${re_numbered} ]]; then
+    if [[ ! ${stem} =~ ${re_dated} ]]; then
       if [[ -d ${entry} && ${stem} =~ ^[0-9]{4}- ]]; then
         # Pre-0.3.0 layout: ADRs, specs, and plans were NNNN-slug/ directories.
-        report record WRONG_LAYOUT "${rp}/" "old directory layout; merge its parts into one ${prefix}NNNN-slug.md"
-      elif [[ ${stem} =~ ^([A-Za-z]+-)?[0-9]{4}- ]]; then
-        # A numbered record under a pre-0.3.0 bare name, another prefix, or another case.
-        report record BAD_NAME "${rp}" "records here are named ${prefix}NNNN-slug.md"
+        report record WRONG_LAYOUT "${rp}/" "old directory layout; merge its parts into one ${prefix}YYYYMMDD-slug.md"
+      elif [[ -f ${entry} && ${name} != "${stem}" && ${stem} =~ ^${prefix}[0-9]{4}- ]]; then
+        # 0.3.0 naming: a per-folder sequence number instead of the creation date.
+        report record NUMBERED_ID "${rp}" "sequence-numbered; rename to ${prefix}YYYYMMDD-slug.md using its date:"
+      elif [[ ${stem} =~ ${re_misnamed} ]]; then
+        # A record under a pre-0.3.0 bare name, another prefix, another case, or
+        # a date with the wrong number of digits.
+        report record BAD_NAME "${rp}" "records here are named ${prefix}YYYYMMDD-slug.md"
       else
-        report stray UNNUMBERED "${rp}" "not a ${prefix}NNNN-slug record; adopt it as one or move it out of docs/${folder}/"
+        report stray UNDATED "${rp}" "not a ${prefix}YYYYMMDD-slug record; adopt it as one or move it out of docs/${folder}/"
       fi
       continue
     fi
     if [ -d "${entry}" ] || [ "${name}" = "${stem}" ]; then
-      report record WRONG_LAYOUT "${rp}" "records are single ${prefix}NNNN-slug.md files"
+      report record WRONG_LAYOUT "${rp}" "records are single ${prefix}YYYYMMDD-slug.md files"
       continue
     fi
     [[ ${stem} =~ ${re_kebab} ]] \
       || report record BAD_NAME "${rp}" "slug must be kebab-case (lowercase letters, digits, hyphens)"
     bare="${stem#"${prefix}"}"
-    dashes="${bare#????-}"; dashes="${dashes//[!-]/}"
+    ndate="${bare%%-*}"
+    valid_ymd "${ndate}" \
+      || report record BAD_NAME "${rp}" "'${ndate}' in the name is not a YYYYMMDD date"
+    dashes="${bare#????????-}"; dashes="${dashes//[!-]/}"
     words=$(( ${#dashes} + 1 ))
     [ "${words}" -le 4 ] \
       || report record SLUG_TOO_LONG "${rp}" "slug has ${words} words (at most 4)"
-    num="${bare%%-*}"
-    numbers="${numbers}${num}"$'\n'
     records="${records}${stem}"$'\n'
-    check_record "${tmpl}" "${entry}" "${num}" "${prefix}"
+    check_record "${tmpl}" "${entry}" "${stem}" "${ndate}" "${prefix}"
   done
-
-  while IFS= read -r dup; do
-    [ -n "${dup}" ] && report record DUP_NUMBER "docs/${folder}/${prefix}${dup}-*" "number used by more than one record"
-  done < <(printf '%s' "${numbers}" | sort | uniq -d)
 
   # Index lines: format comes from the template README's `**Index line:**` spec.
   readme="${fdir}/README.md"
@@ -344,23 +380,30 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
   fmt="$(sed -n 's/^\*\*Index line:\*\* `- \([^`]*\)`.*/\1/p' "${tdir}README.md" | head -n 1)"
   [ -n "${fmt}" ] || continue
   n_fields="$(printf '%s\n' "${fmt}" | awk -F' — ' '{print NF}')"
-  value_field="$(printf '%s\n' "${fmt}" | awk -F' — ' '{print $2}')"
+  # With three fields or more, the 2nd names a front-matter key (status, type).
+  value_field=""
+  [ "${n_fields}" -ge 3 ] && value_field="$(printf '%s\n' "${fmt}" | awk -F' — ' '{print $2}')"
   indexed=""
   while IFS= read -r line; do
     case "${line}" in "- "*) ;; *) continue ;; esac
     body="${line#- }"
-    # One awk pass splits the line: stem, field count, last, 2nd and 3rd fields
-    # (unit-separator delimited, so empty fields do not collapse).
-    IFS=$'\x1f' read -r stem count last f2 f3 < <(printf '%s\n' "${body}" \
-      | awk -F' — ' '{printf "%s\037%s\037%s\037%s\037%s\n", $1, NF, $NF, $2, $3}')
+    # One awk pass splits the line: stem, field count, last and 2nd fields, and
+    # the field where the summary belongs (unit-separator delimited, so empty
+    # fields do not collapse).
+    IFS=$'\x1f' read -r stem count last f2 fsum < <(printf '%s\n' "${body}" \
+      | awk -F' — ' -v n="${n_fields}" '{printf "%s\037%s\037%s\037%s\037%s\n", $1, NF, $NF, $2, $n}')
     loc="docs/${folder}/README.md"
     len="$(char_len "${line}")"
     if [ "${len}" -gt 120 ]; then
       report record LINE_TOO_LONG "${loc}" "index line for ${stem} is ${len} characters (at most 120)"
     fi
-    if ! printf '%s' "${stem}" | grep -qE "^${prefix}[0-9]{4}-" || [ "${count}" -lt "${n_fields}" ]; then
+    if [[ ! ${stem} =~ ${re_dated} ]] || [ "${count}" -lt "${n_fields}" ]; then
       report record INDEX_FORMAT "${loc}" "expected \`- ${fmt}\`: ${line}"
       continue
+    fi
+    # A pre-0.4.0 line keeps a YYYY-MM-DD column where the summary now goes.
+    if [ "${count}" -gt "${n_fields}" ] && [[ ${fsum} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+      report record INDEX_FORMAT "${loc}" "${stem}: drop the old date column '${fsum}'; expected \`- ${fmt}\`"
     fi
     if printf '%s\n' "${indexed}" | grep -qxF "${stem}"; then
       report record DUP_INDEX "${loc}" "${stem} is indexed more than once"
@@ -372,10 +415,7 @@ for tdir in "${TEMPLATES_DIR}"/*/; do
       report record ORPHAN_INDEX "${loc}" "${stem} is indexed but has no record"
       continue
     fi
-    if [ "${value_field}" = "YYYY-MM-DD" ]; then date_pos=2 idate="${f2}"; else date_pos=3 idate="${f3}"; fi
-    printf '%s' "${idate}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
-      || report record INDEX_FORMAT "${loc}" "${stem}: '${idate}' is not a YYYY-MM-DD date"
-    if [ "${date_pos}" -eq 3 ]; then
+    if [ -n "${value_field}" ]; then
       rvalue="$(fm_value "${fdir}/${stem}.md" "${value_field}")"
       [ -z "${rvalue}" ] || [ "${f2}" = "${rvalue}" ] \
         || report record INDEX_MISMATCH "${loc}" "${stem}: index says ${value_field} '${f2}', record says '${rvalue}'"

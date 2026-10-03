@@ -16,14 +16,15 @@ knowing next time — but only if every rule below holds:
 **Obsolescence:** a learning records something that happened, so it is never re-verified — but
 its lesson can stop applying (the gotcha is fixed upstream, or a guard now prevents the mistake
 structurally). When that happens, mark the record obsolete in place: set its front matter's
-`obsolete: YYYY-MM-DD — <why it no longer applies>` and keep the rest as history. Its index line stays, suffixed `— obsolete`, so numbers are never reused and references
-by number stay valid. Obsolete learnings are history, not guidance — skip them when skimming the
+`obsolete: YYYY-MM-DD — <why it no longer applies>` and keep the rest as history. Its index line stays, suffixed `— obsolete`, so ids are never reused and references
+stay valid. Obsolete learnings are history, not guidance — skip them when skimming the
 index.
 
-**Naming:** each learning is one file `LRN-NNNN-slug.md` (zero-padded per-folder sequence;
-kebab-case slug, at most 4 words — e.g. `LRN-0005-hook-stdout-buffering.md`). Take the next
-number from the index below (first record: `LRN-0001`). A lesson that outgrows one file is
-split into new numbered records.
+**Naming:** each learning is one file `LRN-YYYYMMDD-slug.md` — its creation date (equal to its
+`date:`, never changed afterwards) and a kebab-case slug, at most 4 words (e.g.
+`LRN-20261003-hook-stdout-buffering.md`). Dates, not sequence numbers, so parallel branches
+never claim the same id. The whole stem is the id. A lesson that outgrows one file is split
+into new records.
 
 **Reading:** the front matter's `summary` states the lesson; skip records with `obsolete:` set;
 open the body for what happened.
@@ -32,8 +33,8 @@ open the body for what happened.
 with the lesson, keep the story under it. Template files are not records — never list them in
 the index.
 
-**Index line:** `- LRN-NNNN-slug — YYYY-MM-DD — one-line summary` — keep the whole line at most
-120 characters.
+**Index line:** `- LRN-YYYYMMDD-slug — one-line summary` — ordered by id (oldest first);
+keep the whole line at most 120 characters.
 
 ## Index
 

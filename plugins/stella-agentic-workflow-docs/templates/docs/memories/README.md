@@ -23,14 +23,15 @@ domain constraints), `ownership` (who owns or decides what).
 **Staleness:** every memory carries a `verified:` date — the last time the fact was confirmed
 true. When a session relies on a memory and confirms it still holds, update `verified:` in the
 file. A memory found to be wrong is corrected in place; a memory no longer relevant is deleted,
-but its index line stays, suffixed `— deleted`, so numbers are never reused and references by
-number stay valid. If the correction itself is a lesson, record that in `learnings/`. The older
+but its index line stays, suffixed `— deleted`, so ids are never reused and references stay
+valid. If the correction itself is a lesson, record that in `learnings/`. The older
 the `verified:` date, the less a memory should be trusted without re-checking.
 
-**Naming:** each memory is one file `MEM-NNNN-slug.md` (zero-padded per-folder sequence;
-kebab-case slug, at most 4 words — e.g. `MEM-0003-staging-db-quirk.md`). Take the next number
-from the index below (first record: `MEM-0001`). A fact that outgrows one file is split into
-new numbered records.
+**Naming:** each memory is one file `MEM-YYYYMMDD-slug.md` — its creation date (equal to its
+`date:`, never changed afterwards) and a kebab-case slug, at most 4 words (e.g.
+`MEM-20261003-staging-db-quirk.md`). Dates, not sequence numbers, so parallel branches never
+claim the same id. The whole stem is the id. A fact that outgrows one file is split into new
+records.
 
 **Reading:** the front matter's `summary` states the fact; open the body for detail and how to
 verify it.
@@ -38,8 +39,8 @@ verify it.
 **Template:** copy [`memory.template.md`](./memory.template.md) from this folder. Template
 files are not records — never list them in the index.
 
-**Index line:** `- MEM-NNNN-slug — type — YYYY-MM-DD — one-line summary` — keep the whole line
-at most 120 characters.
+**Index line:** `- MEM-YYYYMMDD-slug — type — one-line summary` — ordered by id (oldest
+first); keep the whole line at most 120 characters.
 
 ## Index
 

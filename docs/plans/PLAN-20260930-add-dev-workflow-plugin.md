@@ -1,5 +1,5 @@
 ---
-id: PLAN-0001
+id: PLAN-20260930-add-dev-workflow-plugin
 status: proposed # proposed | in-progress | done | abandoned
 date: 2026-09-30
 spec: none
@@ -119,7 +119,7 @@ No skills yet.
 - Should the `stella-agentic-workflow-docs` dependency be pinned to a version range (e.g.
   `^0.3.0`)? The default is unpinned, tracking the latest.
 - Resolved: whether a plan may be a flat file rather than a `NNNN-slug/plan.md` directory —
-  `ADR-0001-single-file-records` makes every plan a single `PLAN-NNNN-slug.md` file.
+  `ADR-20260930-single-file-records` makes every plan a single `PLAN-YYYYMMDD-slug.md` file.
 
 ## Verification
 - `bash scripts/checks.sh` passes.

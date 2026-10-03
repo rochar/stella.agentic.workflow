@@ -1,5 +1,5 @@
 ---
-id: MEM-NNNN
+id: MEM-YYYYMMDD-slug
 type: environment # environment | external-system | domain-rule | ownership
 date: YYYY-MM-DD
 verified: YYYY-MM-DD

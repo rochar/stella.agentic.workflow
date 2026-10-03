@@ -1,9 +1,9 @@
 ---
-id: PLAN-NNNN
+id: PLAN-YYYYMMDD-slug
 status: proposed # proposed | in-progress | done | abandoned
 date: YYYY-MM-DD
-spec: <SPEC-NNNN-slug, or none>
-adrs: <accepted ADRs this plan relies on, as ADR-NNNN-slug, comma-separated, or none>
+spec: <SPEC-YYYYMMDD-slug, or none>
+adrs: <accepted ADRs this plan relies on, as ADR-YYYYMMDD-slug, comma-separated, or none>
 summary: <what this plan does, in one line>
 ---
 ## Approach

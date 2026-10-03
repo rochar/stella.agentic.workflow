@@ -131,7 +131,7 @@ trustworthy:
 
 It re-verifies or retires stale memories, marks learnings whose lesson no longer applies as
 obsolete, merges near-duplicates, and updates dead spec and plan statuses — without erasing
-history (retired records keep their index lines, so record numbers stay stable). It checks the
+history (retired records keep their index lines, so record ids stay stable). It checks the
 structure first and defers to `docs-doctor` if that is off. It never commits; review the diff
 like any other change.
 
@@ -159,9 +159,9 @@ and bootstraps the convention; your repository owns the data.
 | `docs/memories/` | Durable facts not derivable from code or git history | Whenever a session learns something a future session would otherwise rediscover |
 | `docs/learnings/` | Failed approaches, corrections, gotchas, post-mortems | Whenever something didn't work as expected |
 
-Records are single files, prefixed and numbered per folder (`ADR-0001-slug.md`,
-`PLAN-0002-slug.md`, …), each starting with YAML front matter and listed in that folder's
-`README.md` index. The full conventions — naming, front matter, templates, index-line format —
+Records are single files, prefixed and named by creation date (`ADR-20261003-slug.md`,
+`PLAN-20261005-slug.md`, …) so that parallel branches never claim the same name. Each starts
+with YAML front matter and is listed in its folder's `README.md` index. The full conventions — naming, front matter, templates, index-line format —
 are documented in the folder `README.md`s bootstrapped into your repository, and in the
 [plugin README](plugins/stella-agentic-workflow-docs/README.md).
 

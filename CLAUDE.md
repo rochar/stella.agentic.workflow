@@ -31,7 +31,7 @@ Stop and ask only when you can't continue without me, or before anything destruc
 - `templates/docs/` is the scaffold's source of truth; `init-docs.sh` only copies it,
   idempotently and without overwriting. Edit the templates, not the script.
 - This repo's `docs/` scaffold (folder `README.md` prose and every `*.template.md`) must match
-  `templates/docs/` byte-for-byte, so change both together. Records (`<PREFIX>-NNNN-slug.md`
+  `templates/docs/` byte-for-byte, so change both together. Records (`<PREFIX>-YYYYMMDD-slug.md`
   and their index lines) live only in `docs/`.
 - `context/docs-structure.md` is injected into every session of every consuming repo: keep it a
   thin pointer. Record conventions belong in the folder `README.md`s.

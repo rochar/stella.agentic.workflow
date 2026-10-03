@@ -5,7 +5,7 @@ description: Garden the content of the agentic docs/ records (adrs, specs, plans
 
 Garden the agentic `docs/` records: keep what they say trustworthy and cheap to skim. This is
 a gardening pass, not a purge — the conventions deliberately keep history (stable record
-numbers, index lines that never disappear), so nothing in this skill erases the past.
+ids, index lines that never disappear), so nothing in this skill erases the past.
 
 This skill is about content — whether records are still true, current, and distinct. Their
 shape (scaffold, layout, naming, fields, index-line format) is the `docs-doctor` skill's job,
@@ -68,7 +68,7 @@ its index line together.
 ## 5. Prose
 
 - Tighten one-line summaries in indexes, keep memories to one self-contained fact (split a
-  record that grew a second fact into a new numbered record), make learnings lead with the
+  record that grew a second fact into a new record), make learnings lead with the
   lesson. Simplify wording only — never change what a record means.
 - Enforce each folder's split rule: rationale or rejected options in an ADR's `## Decision` move to
   its `## Context` — move, never delete. A spec carrying design or
@@ -81,7 +81,7 @@ its index line together.
   repository itself the scaffold must additionally stay in sync with `templates/docs/`:
   `*.template.md` byte-for-byte, README prose identical with added index lines as the only
   divergence.)
-- Never renumber records or reuse a number; only memory files may be deleted, and every
+- Never rename records or reuse an id; only memory files may be deleted, and every
   retired record keeps its index line.
 - When unsure whether something is stale, obsolete, or duplicate: flag it in the report and
   leave it unchanged.

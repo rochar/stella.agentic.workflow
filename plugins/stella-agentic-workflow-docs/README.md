@@ -51,8 +51,9 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
    and vocabularies, index-line formats) and with `--fix` repairs the scaffold — creating
    missing files, restoring drifted templates, refreshing folder README prose while keeping
    index lines, and removing templates the plugin no longer ships. The skill then migrates
-   records to the current layout (e.g. an old ADR directory into one `ADR-NNNN-slug.md`), adopts
-   decisions, plans, and lessons kept elsewhere as records, and fixes index lines — moving
+   records to the current layout (e.g. an old ADR directory into one `ADR-YYYYMMDD-slug.md`,
+   or a sequence-numbered record to its date-based name), adopts decisions, plans, and
+   lessons kept elsewhere as records, and fixes index lines — moving
    content, never dropping it, and never inventing what no evidence supports. Stray
    documentation that is not a record is left alone. It never commits. The script alone
    exits non-zero when `docs/` does not conform, so it can also gate CI.
@@ -68,7 +69,7 @@ Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-d
 
 ## Document types
 
-Every record is one file `<PREFIX>-NNNN-slug.md` starting with YAML front matter.
+Every record is one file `<PREFIX>-YYYYMMDD-slug.md` starting with YAML front matter.
 
 - **adrs/** (`ADR-`) — architectural or design decisions; anything important for new and
   existing features. Written at decision time. Body: `## Context` and `## Decision`.
@@ -82,12 +83,14 @@ Every record is one file `<PREFIX>-NNNN-slug.md` starting with YAML front matter
 - **learnings/** (`LRN-`) — lessons learned (failed approaches, corrections, gotchas,
   post-mortems), added when the qualification rules in `learnings/README.md` hold.
 
-Records are identified by their prefix, a zero-padded per-folder sequence number (starting at
-`0001`), and a kebab-case slug of at most 4 words (noun-phrase for ADRs and specs, verb-phrase
-for plans) — e.g. `ADR-0012-use-postgres.md`. The front matter holds the id, status or type,
-dates, and a one-line `summary`, so an agent can judge a record without reading its body. The
-index-line format is defined in each folder's `README.md` (ADR, spec, and plan index lines
-carry a status, memory index lines carry a type). Statuses have defined vocabularies and
+Records are identified by their prefix, their creation date (`YYYYMMDD`, equal to the
+`date:` field), and a kebab-case slug of at most 4 words (noun-phrase for ADRs and specs,
+verb-phrase for plans) — e.g. `ADR-20261003-use-postgres.md`; the whole file stem is the id.
+Dates rather than sequence numbers mean parallel branches never claim the same id. The front
+matter holds the id, status or type, dates, and a one-line `summary`, so an agent can judge a
+record without reading its body. The index-line format is defined in each folder's
+`README.md` (ADR, spec, and plan index lines carry a status, memory index lines carry a
+type). Statuses have defined vocabularies and
 reading rules — only accepted ADRs bind; implemented specs and done or abandoned plans are
 history — documented in the folder `README.md`s.
 
