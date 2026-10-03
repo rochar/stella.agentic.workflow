@@ -25,6 +25,8 @@ Stop and ask only when you can't continue without me, or before anything destruc
   - `stella-agentic-workflow-docs` — the `docs/` structure: hooks, injected context, the
     `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc` skills.
 - `docs/` — this repo's own instance of that structure.
+- `<plugin-name>.md` (root) — one visual map per plugin: Mermaid diagrams of its artifacts,
+  session/context flow, and the files it manages; linked from the README's Plugins table.
 
 ## Conventions
 
@@ -33,11 +35,14 @@ Stop and ask only when you can't continue without me, or before anything destruc
 - This repo's `docs/` scaffold (folder `README.md` prose and every `*.template.md`) must match
   `templates/docs/` byte-for-byte, so change both together. Records (`<PREFIX>-YYYYMMDD-slug.md`
   and their index lines) live only in `docs/`.
+- Any change to a plugin's artifacts (manifest, hooks, skills, agents, commands, scripts,
+  context, templates) updates its root `<plugin-name>.md` map in the same change. A new plugin
+  ships its map, a row in the README's Plugins table, and its `marketplace.json` entry.
 - `context/docs-structure.md` is injected into every session of every consuming repo: keep it a
   thin pointer. Record conventions belong in the folder `README.md`s.
 
 ## Tests
 
 `bash scripts/checks.sh` runs every check (JSON validity, shellcheck, bootstrap idempotency,
-hook behaviour, doctor, scaffold diff, context word budget). CI runs it on pushes to `main` and
+hook behaviour, doctor, scaffold diff, context word budget, plugin visual maps). CI runs it on pushes to `main` and
 on pull requests.

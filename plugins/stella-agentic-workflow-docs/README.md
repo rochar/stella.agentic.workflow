@@ -5,6 +5,9 @@ durable knowledge behind between sessions.
 
 Plugin name (kebab-case, as required by Claude Code): `stella-agentic-workflow-docs`.
 
+Visual overview (Mermaid diagrams of every artifact, the session flow, and the `docs/`
+organisation): [stella-agentic-workflow-docs.md](../../stella-agentic-workflow-docs.md).
+
 ## What it does
 
 1. **Defines the structure** — a `docs/` folder with five typed areas, each indexed by its own

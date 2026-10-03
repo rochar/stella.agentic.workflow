@@ -37,3 +37,4 @@ characters.
 
 - ADR-20260930-single-file-records — accepted — One prefixed file per record, YAML front matter
 - ADR-20261003-dated-record-ids — accepted — Records are named by creation date; the full file stem is the id
+- ADR-20261003-plugin-visual-maps — accepted — Each plugin has a root Mermaid map, updated with every plugin change

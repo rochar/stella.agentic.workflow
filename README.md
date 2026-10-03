@@ -165,6 +165,16 @@ with YAML front matter and is listed in its folder's `README.md` index. The full
 are documented in the folder `README.md`s bootstrapped into your repository, and in the
 [plugin README](plugins/stella-agentic-workflow-docs/README.md).
 
+## Plugins
+
+Each plugin in the `stella-agentic` marketplace has a visual map at the repository root —
+Mermaid diagrams of its artifacts (hooks, skills, agents, scripts), how it changes a
+session's context, and the files it manages.
+
+| Plugin | What it does | Visual map |
+| --- | --- | --- |
+| `stella-agentic-workflow-docs` | The `docs/` structure: hooks, injected context, `docs-init`, `docs-doctor`, `docs-gc` | [stella-agentic-workflow-docs.md](stella-agentic-workflow-docs.md) |
+
 ## Developing the framework
 
 If you want to change the framework itself rather than consume it, start with

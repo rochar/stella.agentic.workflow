@@ -436,6 +436,36 @@ else
   fail "injected context file is missing (was it moved without updating checks.sh?): ${CONTEXT_FILE}"
 fi
 
+# --- 7. Every plugin has an up-to-date root visual map -----------------------
+# Per CLAUDE.md: each plugin under plugins/ has <name>.md at the repository root
+# (Mermaid diagrams), linked from README.md, and updated with every plugin
+# change. As a cheap drift guard, every skill, hook handler, agent, and command
+# the plugin ships must be mentioned in its map.
+note "plugin visual maps"
+for pdir in "${REPO_ROOT}"/plugins/*/; do
+  pdir="${pdir%/}"
+  name="$(basename "${pdir}")"
+  map="${REPO_ROOT}/${name}.md"
+  if [ ! -f "${map}" ]; then
+    fail "plugin ${name} has no visual map at the repository root: ${name}.md"
+    continue
+  fi
+  grep -q '^```mermaid' "${map}" || fail "${name}.md contains no mermaid diagram"
+  grep -qF "(${name}.md)" "${REPO_ROOT}/README.md" || fail "README.md does not link ${name}.md"
+  missing_items=""
+  for item in "${pdir}"/skills/*/ "${pdir}"/hooks-handlers/*.sh "${pdir}"/agents/*.md "${pdir}"/commands/*.md; do
+    [ -e "${item}" ] || continue
+    item="$(basename "${item}")"
+    case "${item}" in *.md) item="${item%.md}" ;; esac
+    grep -qF "${item}" "${map}" || missing_items="${missing_items} ${item}"
+  done
+  if [ -n "${missing_items}" ]; then
+    fail "${name}.md does not mention:${missing_items} — update the map with the plugin"
+  else
+    echo "ok: ${name}.md exists, is linked, and covers the plugin's artifacts"
+  fi
+done
+
 # --- summary -----------------------------------------------------------------
 echo
 if [ "${failures}" -gt 0 ]; then
