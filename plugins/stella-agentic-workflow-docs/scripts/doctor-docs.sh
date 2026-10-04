@@ -224,6 +224,7 @@ fi
 # as the template's placeholder text. An abandoned record is history and may be
 # kept as a pointer stub (front matter plus one line saying where its content
 # went), so its body is not checked.
+# shellcheck disable=SC2016 # the $ fields are awk's, not the shell's
 RECORD_AWK="${FM_VAL_AWK}"'
 FNR == 1 { f++; s = ($0 == "---") ? "fm" : "body"; if (f == 2) hasfm = (s == "fm"); if (s == "fm") next }
 s == "fm" && $0 == "---" { s = "body"; if (f == 2) closed = 1; next }
