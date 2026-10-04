@@ -1,183 +1,87 @@
 # stella.agentic.workflow
 
-Give every AI agent working in your repositories a shared, durable memory — owned by the team,
-not by one machine. This framework installs a standard `docs/` structure — decisions, specs,
-plans, memories, learnings — into your repository and teaches it to every Claude Code session
-automatically, so agents leave knowledge behind instead of rediscovering it, across sessions,
-collaborators, and repositories.
+Claude Code plugins that give every AI agent in your repositories a shared, durable memory —
+committed to the repository, owned by the team, and the same in every repo.
+
+## Quickstart
+
+1. **Install the plugin** — every collaborator runs this once, from the repository folder:
+
+   ```
+   claude plugin marketplace add rochar/stella.agentic.workflow
+   claude plugin install stella-agentic-workflow-docs@stella-agentic --scope project
+   ```
+
+2. **Enable it for the repository** — add this to the repository's `.claude/settings.json`:
+
+   ```json
+   {
+     "extraKnownMarketplaces": {
+       "stella-agentic": {
+         "source": { "source": "github", "repo": "rochar/stella.agentic.workflow" }
+       }
+     },
+     "enabledPlugins": {
+       "stella-agentic-workflow-docs@stella-agentic": true
+     }
+   }
+   ```
+
+3. **Bootstrap** the structure in a new Claude Code session (or run `/reload-plugins` in an
+   open one):
+
+   ```
+   /stella-agentic-workflow-docs:docs-init
+   ```
+
+4. **Commit** `.claude/settings.json` and the new `docs/` folder.
+
+Steps 2–4 are done once per repository; every collaborator still runs step 1 on their own
+machine.
 
 ## What you get
 
-After installing and bootstrapping, your repository contains:
-
 ```
 docs/
-├── README.md          # entry point, links to the indexes below
-├── adrs/              # architectural & design decision records
-├── specs/             # specifications: what to build and why
-├── plans/             # plans: how to build it
-├── memories/          # durable facts agents learned about the repository
-└── learnings/         # lessons learned: failures, gotchas, corrections
+├── README.md    # entry point, links to every index
+├── adrs/        # decisions — written at decision time
+├── specs/       # what to build and why
+├── plans/       # how to build it — updated as work progresses
+├── memories/    # durable facts a future session would otherwise rediscover
+└── learnings/   # failed approaches, gotchas, corrections
 ```
 
-Each folder has a `README.md` index of its contents and ships the templates new documents start
-from. From then on, every Claude Code session — terminal CLI, desktop app, or cloud
-(claude.ai/code) — starts already knowing where each document type lives, when to write one,
-and that folder indexes must be kept up to date. You don't have to prompt for any of it.
+Every session with the plugin installed starts knowing this structure and when to write each
+record, and is reminded once per session to record anything durable it produced. You don't
+have to prompt for it.
 
-The structure is plain Markdown committed to **your** repository: readable without any tooling,
-reviewable in pull requests, and yours even if you later remove the plugin.
+It is plain Markdown in **your** repository: reviewable in pull requests, and yours even if you
+remove the plugin. Each folder's `README.md` indexes its records and explains the conventions.
 
-## How this differs from built-in memory
+## Commands
 
-Claude Code's built-in auto memory is personal: it lives on one developer's machine, is never
-committed, and doesn't reach teammates or cloud sessions. A project `CLAUDE.md` is team-shared
-but freeform, hand-maintained, and per-repository. This framework covers the space between the
-two:
+| Run | When |
+| --- | --- |
+| `/stella-agentic-workflow-docs:docs-init` | Once, to create `docs/`. Safe to re-run; never overwrites. |
+| `/stella-agentic-workflow-docs:docs-doctor` | After a plugin update, when records stray from the conventions, or to adopt docs you already keep another way. |
+| `/stella-agentic-workflow-docs:docs-gc` | Occasionally, to retire stale records and merge duplicates. |
 
-- **Team-shared** — the knowledge is committed to the repository and reviewed in pull requests
-  like any other change, so every collaborator's sessions benefit from what one session learned.
-- **Consistent across repositories** — the convention is defined once in the plugin; every
-  repository that installs it gets the same structure, and updates to the plugin-delivered
-  convention (hooks, injected context, skills) reach all of them without copy-pasting between
-  `CLAUDE.md` files. The bootstrapped `docs/` scaffold is committed to each repository and
-  never overwritten, so its README prose changes only when you update it there.
-- **Structured** — typed records (decisions, specs, plans, memories, learnings) with templates and
-  per-folder indexes, instead of freeform notes.
+`docs-doctor` and `docs-gc` never commit — review the diff like any other change.
 
-## Installation
+## Why not just built-in memory or `CLAUDE.md`?
 
-The framework is delivered as a Claude Code plugin (`stella-agentic-workflow-docs`) from the
-`stella-agentic` marketplace hosted in this repository.
-
-### Option A — recommended: check the configuration into your repository
-
-Add this to your repository's `.claude/settings.json` (create the file if needed) and commit
-it:
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "stella-agentic": {
-      "source": {
-        "source": "github",
-        "repo": "rochar/stella.agentic.workflow"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "stella-agentic-workflow-docs@stella-agentic": true
-  }
-}
-```
-
-What this gives you:
-
-- Every collaborator who trusts the repository folder gets the `stella-agentic` marketplace
-  registered automatically, with no extra prompt.
-- The plugin is declared enabled for the project, which is also how **cloud sessions**
-  (claude.ai/code) pick it up.
-- Because the plugin comes from an external source, Claude Code asks each user to confirm the
-  install once (it shows the `claude plugin install` command to run). After that one-time
-  confirmation, the plugin is active in every session.
-
-### Option B — manual, per user
-
-Run these inside a Claude Code session in your repository:
-
-```
-/plugin marketplace add rochar/stella.agentic.workflow
-/plugin install stella-agentic-workflow-docs@stella-agentic
-```
-
-Choose **project scope** during install to share the configuration with collaborators (this
-writes the same settings as Option A).
-
-### Bootstrap the structure
-
-With the plugin installed, create the `docs/` tree once and commit the result:
-
-```
-/stella-agentic-workflow-docs:docs-init
-```
-
-The bootstrap is idempotent and never overwrites existing files, so it is safe to run in a
-repository that already has a `docs/` folder — it only fills in what is missing.
-
-### Reconcile existing or outdated docs
-
-If the repository already kept decisions, plans, or notes its own way, after updating the
-plugin, or whenever records were written without following the structure, run the doctor:
-
-```
-/stella-agentic-workflow-docs:docs-doctor
-```
-
-It repairs the scaffold (missing, drifted, or obsolete README indexes and templates — keeping
-your index lines), migrates records in an older or ad-hoc layout to the current one, adopts
-knowledge found elsewhere as proper records, and fixes index lines — leaving other
-documentation in `docs/` alone. The structural checks come from a script you can also run
-on its own, e.g. in CI: `scripts/doctor-docs.sh` in the plugin exits non-zero when `docs/`
-does not conform. It never commits; review the diff like any other change.
-
-### Garden it over time
-
-Records accumulate and some go stale. Run the gardening skill occasionally to keep the tree
-trustworthy:
-
-```
-/stella-agentic-workflow-docs:docs-gc
-```
-
-It re-verifies or retires stale memories, marks learnings whose lesson no longer applies as
-obsolete, merges near-duplicates, and updates dead spec and plan statuses — without erasing
-history (retired records keep their index lines, so record ids stay stable). It checks the
-structure first and defers to `docs-doctor` if that is off. It never commits; review the diff
-like any other change.
-
-## How it works
-
-The plugin's `SessionStart` hook injects a short description of the structure into the context
-of every session, pointing at the folder `README.md`s for the detailed conventions (naming,
-templates, index format). If the `docs/` structure is missing, the hook tells the agent how to
-bootstrap it instead. A `Stop` hook closes the loop on the write side: once per session — at
-the first natural stopping point, since no hook can know which stop is the last — it asks
-whether the session produced anything durable worth recording, and tells the agent to finish
-without inventing records when nothing qualifies.
-
-Because the bootstrapped `docs/` tree and its README files are committed to your repository,
-the knowledge itself never depends on the plugin being installed — the plugin defines, teaches,
-and bootstraps the convention; your repository owns the data.
-
-## What agents write, and where
-
-| Folder | What goes there | When |
-| --- | --- | --- |
-| `docs/adrs/` | Architectural and design decision records | At decision time |
-| `docs/specs/` | Specifications: what to build and why | When a problem or requirement is worth writing down |
-| `docs/plans/` | Plans: how to build it | Before execution, updated as work progresses |
-| `docs/memories/` | Durable facts not derivable from code or git history | Whenever a session learns something a future session would otherwise rediscover |
-| `docs/learnings/` | Failed approaches, corrections, gotchas, post-mortems | Whenever something didn't work as expected |
-
-Records are single files, prefixed and named by creation date (`ADR-20261003-slug.md`,
-`PLAN-20261005-slug.md`, …) so that parallel branches never claim the same name. Each starts
-with YAML front matter and is listed in its folder's `README.md` index. The full conventions — naming, front matter, templates, index-line format —
-are documented in the folder `README.md`s bootstrapped into your repository, and in the
-[plugin README](plugins/stella-agentic-workflow-docs/README.md).
+- **Built-in auto memory** is personal: it stays on one machine and never reaches teammates.
+- **`CLAUDE.md`** is shared but freeform and maintained by hand, separately in each repository.
+- **This framework** is shared, structured (typed records with templates and indexes), and
+  defined once, in the plugin, for every repository that installs it.
 
 ## Plugins
 
-Each plugin in the `stella-agentic` marketplace has a visual map at the repository root —
-Mermaid diagrams of its artifacts (hooks, skills, agents, scripts), how it changes a
-session's context, and the files it manages.
-
-| Plugin | What it does | Visual map |
+| Plugin | What it does | Details |
 | --- | --- | --- |
-| `stella-agentic-workflow-docs` | The `docs/` structure: hooks, injected context, `docs-init`, `docs-doctor`, `docs-gc` | [stella-agentic-workflow-docs.md](stella-agentic-workflow-docs.md) |
+| `stella-agentic-workflow-docs` | The `docs/` structure, its session hooks, and the `docs-*` commands | [README](plugins/stella-agentic-workflow-docs/README.md) · [visual map](stella-agentic-workflow-docs.md) |
 
-## Developing the framework
+## Contributing
 
-If you want to change the framework itself rather than consume it, start with
-[CLAUDE.md](CLAUDE.md) (layout, conventions to preserve, how to test changes) and the
-[plugin README](plugins/stella-agentic-workflow-docs/README.md). This repository's own
-[docs/](docs/README.md) tree is a live instance of the structure it ships.
+To change the framework itself, start with [CLAUDE.md](CLAUDE.md). This repository's own
+[docs/](docs/README.md) is a live instance of the structure it ships.

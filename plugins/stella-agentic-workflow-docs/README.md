@@ -107,5 +107,5 @@ its template; template files are not records and are never indexed.
 
 ## Installation
 
-See the [repository README](../../README.md#installation) for how
+See the [repository README](../../README.md#quickstart) for how
 to install this plugin in a repository via the `stella-agentic` marketplace.
