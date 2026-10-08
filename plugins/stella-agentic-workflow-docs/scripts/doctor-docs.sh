@@ -221,7 +221,8 @@ fi
 # when `status` is superseded; every value must be valid YAML as written.
 # Body: every `## ` section unless its first line is an `<optional...` hint,
 # every `Label: <...>` line (e.g. an ADR's `Binds:`) filled in, and no line left
-# as the template's placeholder text. An abandoned record is history and may be
+# as the template's placeholder text (including list items such as a spec's
+# `- In: <...>`; those may be dropped, but not left unfilled). An abandoned record is history and may be
 # kept as a pointer stub (front matter plus one line saying where its content
 # went), so its body is not checked.
 # shellcheck disable=SC2016 # the $ fields are awk's, not the shell's
@@ -243,6 +244,7 @@ f == 1 {
   if (h != "" && NF) { if ($0 !~ /^<optional/) need[++nh] = h; h = "" }
   if ($0 ~ /^</) ph[++np] = $0
   else if ($0 ~ /^[A-Za-z][A-Za-z -]*: </) { ph[++np] = $0; lab[++nl] = substr($0, 1, index($0, ":")) }
+  else if ($0 ~ /^- [A-Za-z][A-Za-z -]*: </) ph[++np] = $0
   next
 }
 {

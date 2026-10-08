@@ -14,7 +14,7 @@ Every kind of artifact a Claude Code plugin can ship, and what this one provides
 | Manifest | yes | `.claude-plugin/plugin.json` |
 | Hooks | `SessionStart`, `Stop` | `hooks/hooks.json` → `hooks-handlers/session-start.sh`, `hooks-handlers/stop.sh` |
 | Injected context | yes (≤ 200 words) | `context/docs-structure.md` |
-| Skills | `docs-init`, `docs-doctor`, `docs-gc` | `skills/<name>/SKILL.md` |
+| Skills | `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec` | `skills/<name>/SKILL.md` |
 | Scripts | `init-docs.sh`, `doctor-docs.sh`, shared `lib/template-files.sh` | `scripts/` |
 | Scaffold (data) | the `docs/` tree with READMEs and templates | `templates/docs/` |
 | Agents (subagents) | none | — |
@@ -40,9 +40,11 @@ flowchart LR
     SK --> DI["docs-init"]
     SK --> DD["docs-doctor"]
     SK --> GC["docs-gc"]
+    SK --> SP["docs-spec"]
     DI --> INIT["scripts/init-docs.sh"]
     DD --> DOC["scripts/doctor-docs.sh"]
     GC -- "check only" --> DOC
+    SP -- "check only" --> DOC
 
     SS --> LIB["scripts/lib/template-files.sh"]
     ST --> LIB
@@ -183,6 +185,7 @@ stateDiagram-v2
     state "SPEC" as spec {
         [*] --> draft
         draft --> approved
+        approved --> draft: re-opened by a change to what done means
         approved --> implemented
         draft --> abandoned
         approved --> abandoned
@@ -216,13 +219,15 @@ states.)
 
 ## 8. Which skill to run
 
-All three skills leave a diff for human review — none of them commits.
+Every skill leaves a diff for human review — none of them commits. `docs-spec` works on one
+spec record at a time, on a bootstrapped tree, whenever a spec is written or changes status.
 
 ```mermaid
 flowchart TD
     START{"State of docs/"} -- "missing" --> INIT["/docs-init<br/>init-docs.sh: copy templates/docs,<br/>idempotent, never overwrites"]
     START -- "partial, outdated after a plugin update,<br/>or records written ad hoc" --> DOC
     START -- "structurally clean" --> GC
+    START -- "write, refine, or change the<br/>status of one spec" --> SP
 
     DOC["/docs-doctor"] --> D1["doctor-docs.sh --fix<br/>repair scaffold"]
     D1 --> D2["[record] findings:<br/>migrate layout, rename, fix metadata and indexes"]
@@ -236,6 +241,10 @@ flowchart TD
     INIT --> REVIEW["Human reviews the diff and commits"]
     D4 --> REVIEW
     G1 --> REVIEW
+
+    SP["/docs-spec"] --> S1["create: interview for gaps,<br/>copy spec.template.md, add index line<br/>refine: id and date never change<br/>transition: status + index line together"]
+    S1 --> S2["doctor-docs.sh: no new findings"]
+    S2 --> REVIEW
 ```
 
 ## Keeping this map current

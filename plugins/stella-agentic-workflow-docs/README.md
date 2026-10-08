@@ -70,6 +70,17 @@ organisation): [stella-agentic-workflow-docs.md](../../stella-agentic-workflow-d
    ever deleted; ADRs, specs, and plans are never removed), never editing the scaffold, and
    never committing: the diff is left for human review.
 
+7. **Writes and manages specs** — the `/stella-agentic-workflow-docs:docs-spec` skill
+   ([skills/docs-spec/SKILL.md](skills/docs-spec/SKILL.md)) authors one spec record at a time
+   following `docs/specs/README.md`: it creates a `draft` `SPEC-YYYYMMDD-slug.md` from the
+   repository's own `spec.template.md` (asking only about gaps that would leave the spec
+   untestable, and parking the rest under `## Open questions`) with its index line; refines
+   an existing spec without ever changing its id; and moves it to `approved` (only on
+   explicit human approval), `implemented` (only from `approved`, once every acceptance
+   criterion is verified), or `abandoned`, updating the front matter and index line together.
+   It keeps the split rule — design and steps belong in a plan — leaves when to write specs
+   to the workflows that use them, verifies with `doctor-docs.sh`, and never commits.
+
 ## Document types
 
 Every record is one file `<PREFIX>-YYYYMMDD-slug.md` starting with YAML front matter.

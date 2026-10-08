@@ -65,8 +65,9 @@ remove the plugin. Each folder's `README.md` indexes its records and explains th
 | `/stella-agentic-workflow-docs:docs-init` | Once, to create `docs/`. Safe to re-run; never overwrites. |
 | `/stella-agentic-workflow-docs:docs-doctor` | After a plugin update, when records stray from the conventions, or to adopt docs you already keep another way. |
 | `/stella-agentic-workflow-docs:docs-gc` | Occasionally, to retire stale records and merge duplicates. |
+| `/stella-agentic-workflow-docs:docs-spec` | To write a spec (what to build and why), refine it, or mark it approved, implemented, or abandoned. |
 
-`docs-doctor` and `docs-gc` never commit — review the diff like any other change.
+`docs-doctor`, `docs-gc`, and `docs-spec` never commit — review the diff like any other change.
 
 ## Why not just built-in memory or `CLAUDE.md`?
 

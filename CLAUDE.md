@@ -23,7 +23,7 @@ Stop and ask only when you can't continue without me, or before anything destruc
   marketplace names must be kebab-case (no dots); the dotted form goes in `displayName`.
 - `plugins/<name>/` — one plugin each; read its `README.md` before changing it.
   - `stella-agentic-workflow-docs` — the `docs/` structure: hooks, injected context, the
-    `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc` skills.
+    `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec` skills.
 - `docs/` — this repo's own instance of that structure.
 - `<plugin-name>.md` (root) — one visual map per plugin: Mermaid diagrams of its artifacts,
   session/context flow, and the files it manages; linked from the README's Plugins table.
