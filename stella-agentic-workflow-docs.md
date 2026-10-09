@@ -25,7 +25,11 @@ Every kind of artifact a Claude Code plugin can ship, and what this one provides
 ## 2. Component map
 
 `templates/docs/` is the single source of truth: the bootstrapper copies it, both hooks check
-against it, and the doctor derives its checks from it — all through one shared helper.
+against it, and the doctor derives its checks from it — all through one shared helper. From a
+record type's template the doctor reads its front-matter keys and vocabularies, its required
+`## ` sections (any not starting with an `<optional…` hint), the `Label: <…>` and
+`- Label: <…>` lines those sections must keep filled in (an ADR's `Binds:`, a spec's `- In:` /
+`- Out:`), and every `<…>` placeholder line, which no record may leave unfilled.
 
 ```mermaid
 flowchart LR
@@ -242,7 +246,7 @@ flowchart TD
     D4 --> REVIEW
     G1 --> REVIEW
 
-    SP["/docs-spec"] --> S1["create: interview for gaps,<br/>copy spec.template.md, add index line<br/>refine: id and date never change<br/>transition: status + index line together"]
+    SP["/docs-spec"] --> S1["create: interview for gaps,<br/>copy spec.template.md (missing: docs-doctor), add index line<br/>refine: id and date never change<br/>transition: status + index line together"]
     S1 --> S2["doctor-docs.sh: no new findings"]
     S2 --> REVIEW
 ```

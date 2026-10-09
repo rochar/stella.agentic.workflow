@@ -10,7 +10,9 @@ implemented.
 **Status:** `draft | approved | implemented | abandoned`, kept current in both the front matter
 and the index line below. `implemented` and `abandoned` specs are history, never guidance — the
 code is the source of truth for implemented behaviour. Anything durable a spec settled
-outlives it as an ADR, memory, or learning, not as the spec itself.
+outlives it as an ADR, memory, or learning, not as the spec itself. A change to an `approved`
+spec's scope, requirements, or acceptance criteria sets it back to `draft` until it is approved
+again.
 
 **Naming:** each spec is one file `SPEC-YYYYMMDD-slug.md` — its creation date (equal to its
 `date:`, never changed afterwards) and a kebab-case noun-phrase slug, at most 4 words (e.g.

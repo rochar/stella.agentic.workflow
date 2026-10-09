@@ -14,7 +14,9 @@ built on the docs structure decide that; this skill only makes the record right.
 
 ## Before anything
 
-1. If `docs/specs/README.md` does not exist, stop and suggest the `docs-init` skill.
+1. If `docs/specs/README.md` does not exist, stop and suggest the `docs-init` skill. If it
+   exists but `docs/specs/spec.template.md` does not, stop and suggest the `docs-doctor`
+   skill (it restores missing scaffold files).
 2. Read `docs/specs/README.md`. It is the source of truth for naming, statuses, the split
    rule, and the index-line format; where it and this skill disagree, the README wins.
 3. Pick the mode from the request: **Create** (new spec), **Refine** (change an existing
@@ -50,7 +52,7 @@ built on the docs structure decide that; this skill only makes the record right.
    - `## Objective`: self-contained — a reader without tracker access must understand it.
      Restate the ticket; do not just link it.
    - `## Scope`: fill both `- In:` and `- Out:` lines (write `- Out: none` if there are no
-     non-goals).
+     non-goals); the doctor reports a missing or empty one.
    - `## Requirements`: the behaviour to deliver. For a bug, observed versus expected.
    - `## Acceptance criteria`: unticked `- [ ]` items, each one observable and checkable
      ("export of 10k rows completes in under 30 s"), not aspirations ("export is fast").

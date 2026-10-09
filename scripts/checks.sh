@@ -274,7 +274,7 @@ cp -R "${fresh}" "${drift}"
 # fill_record <template> <out> <sed-expr>: a record built from its template,
 # every <placeholder> line filled, then the given front-matter edits applied.
 fill_record() {
-  sed 's/^<.*/Filled./; s/: <.*/: filled/; s/YYYY-MM-DD/2026-01-01/g' "$1" | sed "$3" > "$2"
+  sed 's/^<.*/Filled./; s/<[^>]*>/filled/g; s/^[^<]*>$/Filled./; s/YYYY-MM-DD/2026-01-01/g' "$1" | sed "$3" > "$2"
 }
 index_line="- PLAN-20260101-add-cache — done — Cache responses"
 fill_record "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/PLAN-20260101-add-cache.md" \
@@ -381,13 +381,19 @@ fill_record "${TEMPLATES_DIR}/learnings/learning.template.md" "${drift}/docs/lea
   's/^id: .*/id: LRN-20260101-a-lesson/'
 sed -i.bak 's/^_No learnings yet\._$/- LRN-20260101-a-lesson — 2026-01-01 — A lesson/' "${drift}/docs/learnings/README.md" \
   && rm "${drift}/docs/learnings/README.md.bak"
-# A template list item (a spec's `- In: <...>`) left unfilled.
+# Template list items (a spec's `- In: <...>`, `- [ ] <...>`) left unfilled.
+# Labeled lines of an optional section (Boundaries' `- Never:`) may be dropped.
 fill_record "${TEMPLATES_DIR}/specs/spec.template.md" "${drift}/docs/specs/SPEC-20260101-a-need.md" \
-  's/^id: .*/id: SPEC-20260101-a-need/'
+  's/^id: .*/id: SPEC-20260101-a-need/; /^- Never: /d'
 sed -i.bak 's/^_No specs yet\._$/- SPEC-20260101-a-need — draft — A need/' "${drift}/docs/specs/README.md" \
   && rm "${drift}/docs/specs/README.md.bak"
 sed 's/^id: .*/id: SPEC-20260101-raw-scope/; s/^- In: .*/- In: <what this covers>/' \
   "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-raw-scope.md"
+sed 's/^id: .*/id: SPEC-20260101-raw-criteria/; s/^- \[ \] .*/- [ ] <specific, testable condition>/' \
+  "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-raw-criteria.md"
+# A labeled line of a required section (Scope's `- Out:`) dropped.
+sed 's/^id: .*/id: SPEC-20260101-no-out/; /^- Out: /d' \
+  "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-no-out.md"
 doctor_out="$(bash "${DOCTOR}" "${drift}")"
 for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004-bare.md" \
   "INVALID_VALUE docs/adrs/ADR-20260101-bad-one.md — status" "MISSING_FIELD docs/adrs/ADR-20260101-bad-one.md" \
@@ -403,7 +409,9 @@ for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004
   "BAD_NAME docs/adrs/ADR-20260231-feb-thirty.md — '20260231' in the name is not a YYYYMMDD date" \
   "INVALID_VALUE docs/plans/PLAN-20260101-old-refs.md — spec 'SPEC-0001-old' is not a SPEC-YYYYMMDD-slug id" \
   "INDEX_FORMAT docs/learnings/README.md — LRN-20260101-a-lesson: drop the old date column" \
-  "UNFILLED_PLACEHOLDER docs/specs/SPEC-20260101-raw-scope.md — still contains template text: - In: <what this covers>"; do
+  "UNFILLED_PLACEHOLDER docs/specs/SPEC-20260101-raw-scope.md — still contains template text: - In: <what this covers>" \
+  "UNFILLED_PLACEHOLDER docs/specs/SPEC-20260101-raw-criteria.md — still contains template text: - [ ] <specific, testable condition>" \
+  "MISSING_SECTION docs/specs/SPEC-20260101-no-out.md — no filled-in \`- Out:\` line"; do
   case "${doctor_out}" in
     *"] ${expect}"*) echo "ok: doctor reports ${expect}" ;;
     *) fail "doctor did not report ${expect}: ${doctor_out}" ;;
@@ -417,7 +425,8 @@ rm -r "${adrs}/ADR-20260101-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-
   "${adrs}/ADR-0008-legacy.md" "${adrs}/ADR-20260101-wrong-id.md" "${adrs}/ADR-20260202-wrong-date.md" \
   "${adrs}/ADR-20261301-bad-month.md" "${adrs}/ADR-20260101-old-ref.md" "${adrs}/ADR-202601011-typo.md" \
   "${adrs}/ADR-20260231-feb-thirty.md" "${drift}/docs/plans/PLAN-20260101-old-refs.md" \
-  "${drift}/docs/specs/SPEC-20260101-raw-scope.md"
+  "${drift}/docs/specs/SPEC-20260101-raw-scope.md" "${drift}/docs/specs/SPEC-20260101-raw-criteria.md" \
+  "${drift}/docs/specs/SPEC-20260101-no-out.md"
 sed -i.bak '/^- ADR-0008-legacy /d' "${adrs}/README.md" && rm "${adrs}/README.md.bak"
 sed -i.bak 's/^- LRN-20260101-a-lesson — 2026-01-01 — /- LRN-20260101-a-lesson — /' "${drift}/docs/learnings/README.md" \
   && rm "${drift}/docs/learnings/README.md.bak"

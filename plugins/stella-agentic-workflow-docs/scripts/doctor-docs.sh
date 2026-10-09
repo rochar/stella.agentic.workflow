@@ -219,12 +219,14 @@ fi
 # YYYY-MM-DD `date:` must equal the date in its name; an empty template
 # value is optional, but `superseded-by` is required exactly
 # when `status` is superseded; every value must be valid YAML as written.
-# Body: every `## ` section unless its first line is an `<optional...` hint,
-# every `Label: <...>` line (e.g. an ADR's `Binds:`) filled in, and no line left
-# as the template's placeholder text (including list items such as a spec's
-# `- In: <...>`; those may be dropped, but not left unfilled). An abandoned record is history and may be
-# kept as a pointer stub (front matter plus one line saying where its content
-# went), so its body is not checked.
+# Body: every `## ` section unless its first line is an `<optional...` hint;
+# in those required sections, every `Label: <...>` or `- Label: <...>` line
+# (an ADR's `Binds:`, a spec's `- In:` / `- Out:`) present and filled in; and
+# no line left as template placeholder text: any template line holding a `<...>` placeholder
+# (or the end of one), list items such as a spec's `- In: <...>` or `- [ ] <...>`
+# included; other such lines may be dropped, but not left unfilled. An abandoned
+# record is history and may be kept as a pointer stub (front matter plus one
+# line saying where its content went), so its body is not checked.
 # shellcheck disable=SC2016 # the $ fields are awk's, not the shell's
 RECORD_AWK="${FM_VAL_AWK}"'
 FNR == 1 { f++; s = ($0 == "---") ? "fm" : "body"; if (f == 2) hasfm = (s == "fm"); if (s == "fm") next }
@@ -240,11 +242,10 @@ s == "fm" {
   next
 }
 f == 1 {
-  if ($0 ~ /^## /) { h = $0; next }
-  if (h != "" && NF) { if ($0 !~ /^<optional/) need[++nh] = h; h = "" }
-  if ($0 ~ /^</) ph[++np] = $0
-  else if ($0 ~ /^[A-Za-z][A-Za-z -]*: </) { ph[++np] = $0; lab[++nl] = substr($0, 1, index($0, ":")) }
-  else if ($0 ~ /^- [A-Za-z][A-Za-z -]*: </) ph[++np] = $0
+  if ($0 ~ /^## /) { h = $0; sopt = 0; next }
+  if (h != "" && NF) { if ($0 ~ /^<optional/) sopt = 1; else need[++nh] = h; h = "" }
+  if ($0 ~ /[<>]/) ph[++np] = $0
+  if (!sopt && $0 ~ /^(- )?[A-Za-z][A-Za-z -]*: </) lab[++nl] = substr($0, 1, index($0, ":"))
   next
 }
 {
