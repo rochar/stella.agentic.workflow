@@ -81,6 +81,20 @@ organisation): [stella-agentic-workflow-docs.md](../../stella-agentic-workflow-d
    It keeps the split rule — design and steps belong in a plan — leaves when to write specs
    to the workflows that use them, verifies with `doctor-docs.sh`, and never commits.
 
+8. **Writes and manages plans** — the `/stella-agentic-workflow-docs:docs-plan` skill
+   ([skills/docs-plan/SKILL.md](skills/docs-plan/SKILL.md)) authors one plan record at a time
+   following `docs/plans/README.md`: it creates a `proposed` `PLAN-YYYYMMDD-slug.md` from the
+   repository's own `plan.template.md`, normally starting from a spec (spec → plan is the
+   natural flow; with none, it offers to write one first, or continues with `spec: none`) and
+   covering every acceptance criterion, the accepted ADRs it relies on, the project's
+   instructions, memories, learnings, stack, and code, with its index line;
+   refines it without ever changing its id — ticking a step only once its `Verify:` holds and
+   keeping ticked steps as the record of what was done; and moves it to `in-progress`, `done`
+   (only once every step and the plan's verification hold), or `abandoned`, updating the
+   front matter and index line together. It keeps the split rule — requirements belong in the
+   spec, lasting decisions in an ADR — does not implement the plan or change the spec's
+   status, verifies with `doctor-docs.sh`, and never commits.
+
 ## Document types
 
 Every record is one file `<PREFIX>-YYYYMMDD-slug.md` starting with YAML front matter.

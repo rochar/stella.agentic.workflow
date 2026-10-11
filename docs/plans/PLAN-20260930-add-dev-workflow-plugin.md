@@ -3,7 +3,7 @@ id: PLAN-20260930-add-dev-workflow-plugin
 status: proposed # proposed | in-progress | done | abandoned
 date: 2026-09-30
 spec: none
-adrs: none
+adrs: ADR-20261003-plugin-visual-maps
 summary: Dev-workflow plugin skeleton with its dependencies
 ---
 ## Approach
@@ -35,7 +35,11 @@ No skills yet.
 - **Location**: `docs/stella-agentic-workflow-dev/`, named after the plugin, with lowercase
   filenames. The request said `doc/`, but the framework root is `docs/`.
 - The separate plugin, the dependency mechanism, and the overwrite/never-overwrite split are
-  recorded as `ADR-0002-dev-workflow-plugin` (step 5). Add it to `adrs:` once it is accepted.
+  recorded in a new ADR, `ADR-YYYYMMDD-dev-workflow-plugin`, dated the day it is written
+  (step 5). Add it to `adrs:` once it is accepted.
+- **Visual map**: per `ADR-20261003-plugin-visual-maps`, the plugin ships a root
+  `stella-agentic-workflow-dev.md` map from its first step, and every later step that changes
+  the plugin updates it.
 
 ## Steps
 
@@ -45,8 +49,11 @@ No skills yet.
     same author, homepage and repository as the docs plugin, `dependencies` as above);
     `.claude-plugin/marketplace.json` (new plugin entry and
     `"allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"]`);
-    `.claude/settings.json` (enable `stella-agentic-workflow-dev@stella-agentic` to dogfood it)
-  - Verify: `jq empty` on each file
+    `.claude/settings.json` (enable `stella-agentic-workflow-dev@stella-agentic` to dogfood it);
+    root `stella-agentic-workflow-dev.md` (visual map: artifacts table and a Mermaid component
+    diagram) and its row in the root `README.md` Plugins table
+  - Verify: `jq empty` on each file; `bash scripts/checks.sh` passes (its visual-map check now
+    covers the new plugin)
 - [ ] 2. Workflow templates
   - Files: `plugins/stella-agentic-workflow-dev/templates/stella-agentic-workflow-dev/workflow.md`:
     - a header note: managed by the plugin, overwritten every session, overrides go in
@@ -73,9 +80,11 @@ No skills yet.
     - on failure, a stderr warning and `exit 0` so the context it printed is kept.
 
     The hook prints `context/dev-workflow.md` and then the deploy result.
-    `context/dev-workflow.md` is a thin pointer of about 80 words or fewer.
+    `context/dev-workflow.md` is a thin pointer of about 80 words or fewer. The visual map
+    gains the SessionStart deploy flow and names `session-start.sh`.
   - Verify: run the script twice on a tmp repo, with and without a bootstrapped `docs/`;
-    run the hook by hand as `CLAUDE.md` describes for the docs hook
+    run the hook by hand with `CLAUDE_PROJECT_DIR` set, as `scripts/checks.sh` does for the
+    docs hook
 - [ ] Checkpoint: the hook deploys both files into a bootstrapped tmp repo and does nothing
   on a second run
 
@@ -92,7 +101,7 @@ No skills yet.
   - Verify: `bash scripts/checks.sh`
 - [ ] 5. Dogfood the files and record the decision
   - Files: `docs/stella-agentic-workflow-dev/workflow.md`, `docs/stella-agentic-workflow-dev/config.md`,
-    `docs/adrs/ADR-0002-dev-workflow-plugin.md` and its index line (following
+    `docs/adrs/ADR-YYYYMMDD-dev-workflow-plugin.md` and its index line (following
     `docs/adrs/README.md`)
   - Verify: `bash plugins/stella-agentic-workflow-docs/scripts/doctor-docs.sh .` exits 0
 - [ ] 6. Documentation
@@ -117,9 +126,7 @@ No skills yet.
 
 ## Open questions
 - Should the `stella-agentic-workflow-docs` dependency be pinned to a version range (e.g.
-  `^0.3.0`)? The default is unpinned, tracking the latest.
-- Resolved: whether a plan may be a flat file rather than a `NNNN-slug/plan.md` directory —
-  `ADR-20260930-single-file-records` makes every plan a single `PLAN-YYYYMMDD-slug.md` file.
+  `^0.6.0`)? The default is unpinned, tracking the latest.
 
 ## Verification
 - `bash scripts/checks.sh` passes.

@@ -56,12 +56,13 @@ its index line together.
 
 ## 4. ADRs, specs, and plans — status hygiene
 
-- An `approved` spec whose acceptance criteria demonstrably hold: set it `implemented`. A
-  `draft` spec whose criteria hold was never approved: flag it in the report instead. A spec
-  whose work was dropped (`draft` or `approved`): set it `abandoned`. Each change updates the
-  front-matter `status` and the index line.
+- An `approved` spec whose acceptance criteria demonstrably hold: tick them and set it
+  `implemented`. A `draft` spec whose criteria hold was never approved: flag it in the report
+  instead. A spec whose work was dropped (`draft` or `approved`): set it `abandoned`. Each
+  change updates the front-matter `status` and the index line.
 - A plan whose work is demonstrably finished or abandoned (check git history) but still marked
-  `proposed`/`in-progress`: update the front-matter `status` and the index line.
+  `proposed`/`in-progress`: update the front-matter `status` and the index line. `done` needs
+  every step and checkpoint ticked, each on evidence; if one cannot be, flag the plan instead.
 - ADR statuses change only with evidence (front-matter `status`, and `superseded-by` when
   superseded).
   Superseding an ADR requires writing a new one — out of scope here; report it instead.

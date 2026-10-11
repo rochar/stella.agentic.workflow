@@ -221,14 +221,36 @@ fi
 # when `status` is superseded; every value must be valid YAML as written.
 # Body: every `## ` section unless its first line is an `<optional...` hint;
 # in those required sections, every `Label: <...>` or `- Label: <...>` line
-# (an ADR's `Binds:`, a spec's `- In:` / `- Out:`) present and filled in; and
-# no line left as template placeholder text: any template line holding a `<...>` placeholder
+# (an ADR's `Binds:`, a spec's `- In:` / `- Out:`) present and filled in, on the
+# line or on indented lines below it; every record item of a kind the template
+# gives indented `- Label: <...>` sub-lines in the same `## ` section (a plan
+# step `- [ ] 1. <step>` under `## Steps` and its `- Files:` / `- Verify:`)
+# carrying them filled in, on the line or on more deeply indented lines below
+# it, whatever its bullet, checkbox state, or number; no line left as template
+# placeholder text: any template line holding a `<...>` placeholder
 # (or the end of one), list items such as a spec's `- In: <...>` or `- [ ] <...>`
-# included; other such lines may be dropped, but not left unfilled. An abandoned
+# included; other such lines may be dropped, but not left unfilled; and no
+# unticked `- [ ]` box outside fenced code in a record whose status says the
+# work is complete: the status its template lists just before `abandoned` (a
+# plan's `done`, a spec's `implemented`). An abandoned
 # record is history and may be kept as a pointer stub (front matter plus one
 # line saying where its content went), so its body is not checked.
 # shellcheck disable=SC2016 # the $ fields are awk's, not the shell's
 RECORD_AWK="${FM_VAL_AWK}"'
+# Kind of a list item: any `-`/`*`/`+` bullet as `- `, any checkbox as `[ ] `,
+# and any item number dropped, so `* [x] 3. a` and `- [ ] a` are the same kind.
+function kind(s,   k) {
+  s = substr(s, 3); k = "- "
+  if (match(s, /^\[[ xX]\] /)) { k = k "[ ] "; s = substr(s, RLENGTH + 1) }
+  if (match(s, /^[0-9]+\. /)) s = substr(s, RLENGTH + 1)
+  return k s
+}
+# Closes the record item being read: records which required sub-lines it lacked.
+function item_end(   x) {
+  if (cur == "") return
+  for (x = 1; x <= ns; x++) if (spar[x] == cur) { if (!got[x]) miss[x] = miss[x] (miss[x] == "" ? "" : ", ") curl; got[x] = 0 }
+  cur = ""; pend = 0
+}
 FNR == 1 { f++; s = ($0 == "---") ? "fm" : "body"; if (f == 2) hasfm = (s == "fm"); if (s == "fm") next }
 s == "fm" && $0 == "---" { s = "body"; if (f == 2) closed = 1; next }
 s == "fm" {
@@ -242,16 +264,44 @@ s == "fm" {
   next
 }
 f == 1 {
-  if ($0 ~ /^## /) { h = $0; sopt = 0; next }
+  if ($0 ~ /^## /) { h = $0; th = $0; sopt = 0; pk = ""; next }
   if (h != "" && NF) { if ($0 ~ /^<optional/) sopt = 1; else need[++nh] = h; h = "" }
   if ($0 ~ /[<>]/) ph[++np] = $0
   if (!sopt && $0 ~ /^(- )?[A-Za-z][A-Za-z -]*: </) lab[++nl] = substr($0, 1, index($0, ":"))
+  if ($0 ~ /^[^ \t]/) { pk = ($0 ~ /^- .*</) ? th "\034" kind(substr($0, 1, index($0, "<") - 1)) : ""; if (pk != "") tkind[pk] = 1 }
+  else if (!sopt && pk != "" && $0 ~ /^[ \t]+- [A-Za-z][A-Za-z -]*: </) {
+    r = $0; sub(/^[ \t]+/, "", r); slab[++ns] = substr(r, 1, index(r, ":")); spar[ns] = pk; parent[pk] = 1
+  }
   next
 }
 {
   have[$0] = 1
+  # A label left empty on its line is filled by an indented line below it.
+  if (lpend && $0 ~ /[^ \t]/) { if ($0 ~ /^[ \t]/) hasl[lpend] = 1; lpend = 0 }
   for (x = 1; x <= nl; x++) if (index($0, lab[x]) == 1) {
-    r = substr($0, length(lab[x]) + 1); gsub(/[ \t]/, "", r); if (r != "") hasl[x] = 1
+    r = substr($0, length(lab[x]) + 1); gsub(/[ \t]/, "", r); if (r != "") hasl[x] = 1; else lpend = x
+  }
+  if ($0 ~ /^[ \t]*(```|~~~)/) { if ($0 ~ /^[^ \t]/) item_end(); fence = !fence; next }
+  if (fence) next
+  if ($0 ~ /^[ \t]*[-*+] \[ \]/) { nopen++; uline = uline (nopen > 1 ? ", " : "") FNR }
+  if ($0 ~ /^[^ \t]/) {
+    item_end()
+    if ($0 ~ /^## /) rh = $0
+    # An item is of the longest template kind it starts with (`- [ ] Checkpoint: x`
+    # is a checkpoint, not a step).
+    if (ns && $0 ~ /^[-*+] /) {
+      r = rh "\034" kind($0); b = ""
+      for (q in tkind) if (index(r, q) == 1 && length(q) > length(b)) b = q
+      if (b in parent) { cur = b; curl = FNR }
+    }
+  } else if (cur != "") {
+    # A label left empty on its line is filled by a more deeply indented line below it.
+    r = $0; ind = match(r, /[^ \t]/) - 1; sub(/^[ \t]+/, "", r); sub(/^[*+] /, "- ", r)
+    if (pend && ind > pind && r != "") { got[pend] = 1; pend = 0 }
+    for (x = 1; x <= ns; x++) if (spar[x] == cur && index(r, slab[x]) == 1) {
+      sv = substr(r, length(slab[x]) + 1); gsub(/[ \t]/, "", sv); pend = 0
+      if (sv != "") got[x] = 1; else { pend = x; pind = ind }
+    }
   }
 }
 END {
@@ -303,7 +353,14 @@ END {
   if (rval["status"] == "abandoned") exit
   for (x = 1; x <= nh; x++) { hd = need[x]; if (!(hd in have)) print "MISSING_SECTION\037no `" hd "` section" }
   for (x = 1; x <= nl; x++) if (!hasl[x]) print "MISSING_SECTION\037no filled-in `" lab[x] "` line"
+  item_end()
+  for (x = 1; x <= ns; x++) if (miss[x] != "") print "MISSING_SECTION\037no filled-in `" slab[x] "` line under the item at line " miss[x]
   for (x = 1; x <= np; x++) { hd = ph[x]; if (hd in have) { print "UNFILLED_PLACEHOLDER\037still contains template text: " hd; break } }
+  # The complete status is the one the template lists just before `abandoned`.
+  m = split(tcom["status"], opt, " [|] "); fin = ""
+  for (y = 2; y <= m; y++) if (opt[y] == "abandoned") fin = opt[y - 1]
+  if (nopen && fin != "" && rval["status"] == fin)
+    print "UNTICKED_BOX\037status " rval["status"] ", but a box is still unticked at line " uline
 }'
 
 check_record() { # template record-file stem name-date prefix

@@ -14,7 +14,7 @@ Every kind of artifact a Claude Code plugin can ship, and what this one provides
 | Manifest | yes | `.claude-plugin/plugin.json` |
 | Hooks | `SessionStart`, `Stop` | `hooks/hooks.json` → `hooks-handlers/session-start.sh`, `hooks-handlers/stop.sh` |
 | Injected context | yes (≤ 200 words) | `context/docs-structure.md` |
-| Skills | `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec` | `skills/<name>/SKILL.md` |
+| Skills | `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec`, `docs-plan` (the last two show an `argument-hint` for the record id) | `skills/<name>/SKILL.md` |
 | Scripts | `init-docs.sh`, `doctor-docs.sh`, shared `lib/template-files.sh` | `scripts/` |
 | Scaffold (data) | the `docs/` tree with READMEs and templates | `templates/docs/` |
 | Agents (subagents) | none | — |
@@ -29,7 +29,12 @@ against it, and the doctor derives its checks from it — all through one shared
 record type's template the doctor reads its front-matter keys and vocabularies, its required
 `## ` sections (any not starting with an `<optional…` hint), the `Label: <…>` and
 `- Label: <…>` lines those sections must keep filled in (an ADR's `Binds:`, a spec's `- In:` /
-`- Out:`), and every `<…>` placeholder line, which no record may leave unfilled.
+`- Out:`; content on the line or on indented lines below it), the indented `- Label: <…>`
+sub-lines every item of a kind in that section must carry (a plan step's `- Files:` /
+`- Verify:`, whatever its bullet, checkbox, or number), every `<…>` placeholder line, which no
+record may leave unfilled, and its complete status — the one its `status:` vocabulary lists
+just before `abandoned` (a plan's `done`, a spec's `implemented`) — in which no box outside
+fenced code may stay unticked.
 
 ```mermaid
 flowchart LR
@@ -45,10 +50,12 @@ flowchart LR
     SK --> DD["docs-doctor"]
     SK --> GC["docs-gc"]
     SK --> SP["docs-spec"]
+    SK --> PL["docs-plan"]
     DI --> INIT["scripts/init-docs.sh"]
     DD --> DOC["scripts/doctor-docs.sh"]
     GC -- "check only" --> DOC
     SP -- "check only" --> DOC
+    PL -- "check only" --> DOC
 
     SS --> LIB["scripts/lib/template-files.sh"]
     ST --> LIB
@@ -223,8 +230,9 @@ states.)
 
 ## 8. Which skill to run
 
-Every skill leaves a diff for human review — none of them commits. `docs-spec` works on one
-spec record at a time, on a bootstrapped tree, whenever a spec is written or changes status.
+Every skill leaves a diff for human review — none of them commits. `docs-spec` and `docs-plan`
+each work on one record at a time, on a bootstrapped tree, whenever a spec or plan is written,
+makes progress, or changes status.
 
 ```mermaid
 flowchart TD
@@ -232,6 +240,7 @@ flowchart TD
     START -- "partial, outdated after a plugin update,<br/>or records written ad hoc" --> DOC
     START -- "structurally clean" --> GC
     START -- "write, refine, or change the<br/>status of one spec" --> SP
+    START -- "write a plan, tick its steps,<br/>or change its status" --> PL
 
     DOC["/docs-doctor"] --> D1["doctor-docs.sh --fix<br/>repair scaffold"]
     D1 --> D2["[record] findings:<br/>migrate layout, rename, fix metadata and indexes"]
@@ -249,6 +258,10 @@ flowchart TD
     SP["/docs-spec"] --> S1["create: interview for gaps,<br/>copy spec.template.md (missing: docs-doctor), add index line<br/>refine: id and date never change<br/>transition: status + index line together"]
     S1 --> S2["doctor-docs.sh: no new findings"]
     S2 --> REVIEW
+
+    PL["/docs-plan"] --> P1["create: start from the spec (none: offer docs-spec),<br/>check accepted ADRs in scope, CLAUDE.md, memories,<br/>learnings, stack and code; copy plan.template.md (missing: docs-doctor), add index line<br/>refine: tick a step only when its Verify holds<br/>transition: first tick → in-progress; done only when<br/>every step and Verification hold"]
+    P1 --> S2
+    SP -. "approved: next, plan from it" .-> PL
 ```
 
 ## Keeping this map current

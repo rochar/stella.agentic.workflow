@@ -43,8 +43,9 @@ lost. Where no evidence exists, do not invent it: write `Not recorded.` in a req
 the content cannot fill, and list the gap in the report.
 
 - **Content in the wrong place** (`MISSING_SECTION`, or a record mixing what a split rule
-  separates). Move content to where the folder README now puts it; restructure it under the
-  template's headings. Moves, never deletions. Typical upgrade cases from the pre-0.3.0
+  separates). A `MISSING_SECTION` for a plan step's `- Files:` / `- Verify:` means the step
+  lacks that sub-line: fill it from evidence, or `Not recorded.`. Otherwise, move content to
+  where the folder README now puts it; restructure it under the template's headings. Moves, never deletions. Typical upgrade cases from the pre-0.3.0
   layout (`WRONG_LAYOUT` on a `NNNN-slug/` directory), each named by its `date:` as the
   `NUMBERED_ID` bullet below describes:
   - an ADR directory → one `ADR-YYYYMMDD-slug.md`: status and date from `decision.md` into
@@ -105,6 +106,8 @@ the content cannot fill, and list the gap in the report.
   nothing explains it, leave the line and flag it — the id stays taken either way.
 - **`UNFILLED_PLACEHOLDER`**: remove optional sections that were never filled; fill required
   ones from evidence or `Not recorded.`.
+- **`UNTICKED_BOX`** (a `done` plan or `implemented` spec with an unticked box): tick each box
+  the evidence shows holds; flag the rest for a human — never change the status on your own.
 
 Never re-date or rename a record except to migrate it to the current naming, never reuse an
 id, and never delete an ADR, spec, or plan.

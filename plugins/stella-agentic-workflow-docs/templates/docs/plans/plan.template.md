@@ -8,7 +8,8 @@ summary: <what this plan does, in one line>
 ---
 ## Approach
 <how it will be done: chosen design, root cause for a bug; alternatives rejected, one line
-each. A decision that outlives this plan becomes a new ADR — list it in `adrs:`>
+each. A decision that outlives this plan becomes a new ADR — list it in `adrs:` once
+accepted>
 
 ## Steps
 <group into phases when the plan is long; otherwise drop the phase headings>

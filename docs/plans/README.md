@@ -20,8 +20,9 @@ the same id. The whole stem is the id. A plan names the spec it implements in it
 
 **Split rule:** a plan holds the how — approach, steps, risks, verification. Requirements and
 acceptance criteria belong in the spec; a decision that outlives the plan belongs in a new ADR,
-added to `adrs:`. Steps are checkboxes, ticked as they are completed; long plans group them
-into phases, each ending in a checkpoint.
+added to `adrs:` once accepted. Steps are checkboxes, each naming its files and how it is
+verified, ticked as they are completed; a `done` plan has none left unticked. Long plans group
+them into phases, each ending in a checkpoint.
 
 **Reading:** start with the index line, then the front matter; open the body for the approach
 and steps, the spec named in `spec:` for what is being solved, and follow only the ADRs in

@@ -16,6 +16,8 @@ Stop and ask only when you can't continue without me, or before anything destruc
 
 2. Once you have answered something, treat that answer as done. Focus on what I'm asking now, and don't go back over an earlier answer unless I ask about it or point out a problem with it.
 
+3. When you finish a change to a plugin (skills, hooks, injected context, scripts, templates, etc.), report how it changes token usage and performance in consuming repos. Say what is loaded into every session (injected context, skill names and descriptions), what loads only when a skill is invoked (its body), and any runtime cost added to hooks or scripts. Give rough before and after sizes.
+
 ## Project Structure
 
 - `.claude-plugin/marketplace.json` — the `stella-agentic` plugin marketplace, listing every
@@ -23,7 +25,8 @@ Stop and ask only when you can't continue without me, or before anything destruc
   marketplace names must be kebab-case (no dots); the dotted form goes in `displayName`.
 - `plugins/<name>/` — one plugin each; read its `README.md` before changing it.
   - `stella-agentic-workflow-docs` — the `docs/` structure: hooks, injected context, the
-    `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec` skills.
+    `templates/docs/` scaffold, and the `docs-init`, `docs-doctor`, `docs-gc`, `docs-spec`,
+    `docs-plan` skills.
 - `docs/` — this repo's own instance of that structure.
 - `<plugin-name>.md` (root) — one visual map per plugin: Mermaid diagrams of its artifacts,
   session/context flow, and the files it manages; linked from the README's Plugins table.

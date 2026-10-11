@@ -278,7 +278,7 @@ fill_record() {
 }
 index_line="- PLAN-20260101-add-cache — done — Cache responses"
 fill_record "${TEMPLATES_DIR}/plans/plan.template.md" "${drift}/docs/plans/PLAN-20260101-add-cache.md" \
-  's/^id: .*/id: PLAN-20260101-add-cache/; s/^status: proposed/status: done/; s/^spec: .*/spec: none/; s/^adrs: .*/adrs: ADR-20260101-use-x, ADR-20260102-other/'
+  's/^id: .*/id: PLAN-20260101-add-cache/; s/^status: proposed/status: done/; s/^spec: .*/spec: none/; s/^adrs: .*/adrs: ADR-20260101-use-x, ADR-20260102-other/; s/^- \[ \]/- [x]/'
 sed -i.bak "s/^_No plans yet\._\$/${index_line}/; s/^Plans produced/Plans (old wording) produced/" \
   "${drift}/docs/plans/README.md" && rm "${drift}/docs/plans/README.md.bak"
 echo "stale" >> "${drift}/docs/adrs/adr.template.md"
@@ -394,6 +394,34 @@ sed 's/^id: .*/id: SPEC-20260101-raw-criteria/; s/^- \[ \] .*/- [ ] <specific, t
 # A labeled line of a required section (Scope's `- Out:`) dropped.
 sed 's/^id: .*/id: SPEC-20260101-no-out/; /^- Out: /d' \
   "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-no-out.md"
+# A plan step without its `- Verify:` sub-line; a box left unticked under a
+# status that says the work is complete (a `done` plan, an `implemented` spec).
+# A ticked `implemented` spec conforms.
+sed 's/^id: .*/id: PLAN-20260101-no-verify/; /^  - Verify: /d' \
+  "${drift}/docs/plans/PLAN-20260101-add-cache.md" > "${drift}/docs/plans/PLAN-20260101-no-verify.md"
+sed 's/^id: .*/id: PLAN-20260101-open-step/; s/^- \[x\] 1\./- [ ] 1./' \
+  "${drift}/docs/plans/PLAN-20260101-add-cache.md" > "${drift}/docs/plans/PLAN-20260101-open-step.md"
+sed 's/^id: .*/id: SPEC-20260101-open-criteria/; s/^status: .*/status: implemented/' \
+  "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-open-criteria.md"
+sed 's/^id: .*/id: SPEC-20260101-met-need/; s/^status: .*/status: implemented/; s/^- \[ \]/- [x]/' \
+  "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-met-need.md"
+echo "- SPEC-20260101-met-need — implemented — A met need" >> "${drift}/docs/specs/README.md"
+# A conforming `done` plan: a `- Files:` filled by a nested list, a numbered box
+# outside `## Steps` (no sub-lines needed), and an unticked box in fenced code.
+{ awk '/^id: /{print "id: PLAN-20260101-nested-files"; next} /^  - Files: /{print "  - Files:"; print "    - a.sh"; next} {print}' \
+    "${drift}/docs/plans/PLAN-20260101-add-cache.md"
+  # shellcheck disable=SC2016 # the backticks are a literal Markdown fence
+  printf -- '- [x] 1. checks pass\n\n```markdown\n- [ ] example\n```\n'
+} > "${drift}/docs/plans/PLAN-20260101-nested-files.md"
+echo "- PLAN-20260101-nested-files — done — Nested files" >> "${drift}/docs/plans/README.md"
+# A conforming spec whose `- Out:` is filled by a nested list; a `done` plan
+# with an unnumbered `*` step lacking its sub-lines (a checkpoint needs none).
+sed 's/^id: .*/id: SPEC-20260101-nested-out/; s/^- Out: .*/- Out:\
+  - a thing/' "${drift}/docs/specs/SPEC-20260101-a-need.md" > "${drift}/docs/specs/SPEC-20260101-nested-out.md"
+echo "- SPEC-20260101-nested-out — draft — Nested out" >> "${drift}/docs/specs/README.md"
+awk '/^id: /{print "id: PLAN-20260101-star-step"; next}
+  /^## Steps$/{st=1} st && /^## Risks$/{print "* [ ] Unnumbered step"; print "- [x] Checkpoint: it holds"; print ""; st=0}
+  {print}' "${drift}/docs/plans/PLAN-20260101-add-cache.md" > "${drift}/docs/plans/PLAN-20260101-star-step.md"
 doctor_out="$(bash "${DOCTOR}" "${drift}")"
 for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004-bare.md" \
   "INVALID_VALUE docs/adrs/ADR-20260101-bad-one.md — status" "MISSING_FIELD docs/adrs/ADR-20260101-bad-one.md" \
@@ -411,14 +439,19 @@ for expect in "WRONG_LAYOUT docs/adrs/0003-old-layout/" "BAD_NAME docs/adrs/0004
   "INDEX_FORMAT docs/learnings/README.md — LRN-20260101-a-lesson: drop the old date column" \
   "UNFILLED_PLACEHOLDER docs/specs/SPEC-20260101-raw-scope.md — still contains template text: - In: <what this covers>" \
   "UNFILLED_PLACEHOLDER docs/specs/SPEC-20260101-raw-criteria.md — still contains template text: - [ ] <specific, testable condition>" \
-  "MISSING_SECTION docs/specs/SPEC-20260101-no-out.md — no filled-in \`- Out:\` line"; do
+  "MISSING_SECTION docs/specs/SPEC-20260101-no-out.md — no filled-in \`- Out:\` line" \
+  "MISSING_SECTION docs/plans/PLAN-20260101-no-verify.md — no filled-in \`- Verify:\` line under the item at line" \
+  "UNTICKED_BOX docs/plans/PLAN-20260101-open-step.md — status done" \
+  "UNTICKED_BOX docs/specs/SPEC-20260101-open-criteria.md — status implemented" \
+  "MISSING_SECTION docs/plans/PLAN-20260101-star-step.md — no filled-in \`- Files:\` line under the item at line" \
+  "UNTICKED_BOX docs/plans/PLAN-20260101-star-step.md — status done"; do
   case "${doctor_out}" in
     *"] ${expect}"*) echo "ok: doctor reports ${expect}" ;;
     *) fail "doctor did not report ${expect}: ${doctor_out}" ;;
   esac
 done
 case "${doctor_out}" in
-  *ADR-20260101-use-x*|*MEM-20260101-a-fact*|*PLAN-20260101-add-cache*|*SPEC-20260101-a-need*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
+  *ADR-20260101-use-x*|*MEM-20260101-a-fact*|*PLAN-20260101-add-cache*|*SPEC-20260101-a-need*|*SPEC-20260101-met-need*|*PLAN-20260101-nested-files*|*SPEC-20260101-nested-out*) fail "doctor flagged a conforming record: ${doctor_out}" ;;
 esac
 rm -r "${adrs}/ADR-20260101-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-bare.md" \
   "${adrs}/ADR-20260101-raw-binds.md" "${adrs}/adr-20260101-lower-case.md" "${adrs}/ADR-20260101-unclosed.md" \
@@ -426,7 +459,9 @@ rm -r "${adrs}/ADR-20260101-bad-one.md" "${adrs}/0003-old-layout" "${adrs}/0004-
   "${adrs}/ADR-20261301-bad-month.md" "${adrs}/ADR-20260101-old-ref.md" "${adrs}/ADR-202601011-typo.md" \
   "${adrs}/ADR-20260231-feb-thirty.md" "${drift}/docs/plans/PLAN-20260101-old-refs.md" \
   "${drift}/docs/specs/SPEC-20260101-raw-scope.md" "${drift}/docs/specs/SPEC-20260101-raw-criteria.md" \
-  "${drift}/docs/specs/SPEC-20260101-no-out.md"
+  "${drift}/docs/specs/SPEC-20260101-no-out.md" "${drift}/docs/plans/PLAN-20260101-no-verify.md" \
+  "${drift}/docs/plans/PLAN-20260101-open-step.md" "${drift}/docs/specs/SPEC-20260101-open-criteria.md" \
+  "${drift}/docs/plans/PLAN-20260101-star-step.md"
 sed -i.bak '/^- ADR-0008-legacy /d' "${adrs}/README.md" && rm "${adrs}/README.md.bak"
 sed -i.bak 's/^- LRN-20260101-a-lesson — 2026-01-01 — /- LRN-20260101-a-lesson — /' "${drift}/docs/learnings/README.md" \
   && rm "${drift}/docs/learnings/README.md.bak"
